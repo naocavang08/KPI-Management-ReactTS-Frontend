@@ -20,9 +20,9 @@ import {
     useTheme,
 } from "@mui/material";
 import { BarChart3, Bell, FileText, FolderKanban, Home, LogOut, Menu as MenuIcon, Settings, Stamp, User, Users } from "lucide-react";
-import { me } from "@/api/auth.api";
-import type { MeResponse } from "@/interfaces/auth.types";
-import { useAuthStore } from "@/stores/auth.store";
+import { me } from "../api/auth.api";
+import type { MeResponse } from "../interfaces/auth.types";
+import { useAuthStore } from "../stores/auth.store";
 
 const MENU_ITEMS = [
     {
@@ -158,7 +158,7 @@ const ProjectLayout = () => {
                     PM
                 </Box>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight={600}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 14 }}>
                         Project Management
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -209,7 +209,7 @@ const ProjectLayout = () => {
                         <User size={18} />
                     </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="subtitle2" fontWeight={600} noWrap>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: 14 }} noWrap>
                             {userName}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" noWrap>
@@ -226,7 +226,7 @@ const ProjectLayout = () => {
                     v1.0.0
                 </Typography>
             </Box>
-        </Box>
+        </Box >
     );
 
     return (
@@ -246,7 +246,7 @@ const ProjectLayout = () => {
                             <MenuIcon size={20} />
                         </IconButton>
                     )}
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, fontSize: 14 }}>
                         Project Hub
                     </Typography>
                     <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 1 }}>
@@ -317,6 +317,6 @@ const ProjectLayout = () => {
             </Menu>
         </Box>
     );
-};
+}
 
 export default ProjectLayout;

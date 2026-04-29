@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#e7e7f2",
+                    "primary": "#003d9b",
+                    "outline-variant": "#c3c6d6",
+                    "on-background": "#191b23",
+                    "on-secondary-fixed": "#002113",
+                    "on-secondary-container": "#00734c",
+                    "surface-variant": "#e1e2ec",
+                    "on-error-container": "#93000a",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#faf8ff",
+                    "on-surface": "#191b23",
+                    "tertiary-container": "#7d5200",
+                    "tertiary": "#5e3c00",
+                    "secondary-container": "#82f9be",
+                    "surface": "#faf8ff",
+                    "on-tertiary-fixed": "#291800",
+                    "secondary": "#006c47",
+                    "primary-fixed": "#dae2ff",
+                    "tertiary-fixed": "#ffddb3",
+                    "surface-dim": "#d9d9e4",
+                    "on-error": "#ffffff",
+                    "surface-tint": "#0c56d0",
+                    "primary-container": "#0052cc",
+                    "on-surface-variant": "#434654",
+                    "secondary-fixed": "#82f9be",
+                    "on-tertiary-fixed-variant": "#624000",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#ffca81",
+                    "primary-fixed-dim": "#b2c5ff",
+                    "on-secondary": "#ffffff",
+                    "background": "#faf8ff",
+                    "surface-container": "#ededf8",
+                    "error": "#ba1a1a",
+                    "outline": "#737685",
+                    "on-secondary-fixed-variant": "#005235",
+                    "secondary-fixed-dim": "#65dca4",
+                    "inverse-primary": "#b2c5ff",
+                    "on-tertiary": "#ffffff",
+                    "inverse-on-surface": "#f0f0fb",
+                    "inverse-surface": "#2e3038",
+                    "on-primary-fixed-variant": "#0040a2",
+                    "on-primary-container": "#c4d2ff",
+                    "tertiary-fixed-dim": "#ffb950",
+                    "on-primary-fixed": "#001848",
+                    "surface-container-low": "#f3f3fd",
+                    "surface-container-highest": "#e1e2ec"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xs": "8px",
+                    "sidebar_width": "260px",
+                    "grid_gutter": "24px",
+                    "md": "16px",
+                    "xl": "32px",
+                    "grid_columns": "12",
+                    "lg": "24px",
+                    "sm": "12px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "body-base": ["Inter"],
+                    "h1": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "display-kpi": ["Inter"],
+                    "h2": ["Inter"],
+                    "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-base": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "fontWeight": "700"}],
+                    "display-kpi": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F4F5F7;
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-surface">
+<div class="flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="fixed h-screen left-0 top-0 w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full py-4 z-50">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-blue-700 dark:text-blue-400 leading-none">KPI Management</h1>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Enterprise Portal</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 duration-200 transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-sans text-sm tracking-tight">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 duration-200 transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-sans text-sm tracking-tight">KPI Library</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 duration-200 transition-all" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-sans text-sm tracking-tight">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 duration-200 transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-sans text-sm tracking-tight">Team Performance</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-blue-700 dark:text-blue-400 font-bold border-l-4 border-blue-700 bg-blue-50/50 dark:bg-blue-900/20 duration-200 transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-sans text-sm tracking-tight">Settings</span>
+</a>
+</nav>
+<div class="px-4 mt-auto">
+<div class="p-4 bg-surface-container-low rounded-xl border border-slate-200">
+<div class="flex items-center gap-3">
+<img alt="User profile" class="w-10 h-10 rounded-full border border-white shadow-sm" data-alt="professional corporate headshot of a middle-aged male executive with a confident expression in a bright modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuXbUTMXuZWAeeL5hnIuC_pmIWW4wQriFfs0PKfne3Y1wyvMSdm9QYNfxzRPBkEyglDiTjkk7Mp24ChTxHxPneyUKpZC8ZNK3fvCSH7klzFQLmGonLVVuh6VZ4_6434Xf-D3v-nsYfdvzPr_RjUin5dln5KVF70kOBtNMO6grsGq8oPPp2Q38X5DMQIWbktivC6YK84_sFOusTDCSeBvOXqkHXj8iw1cSgHYvQakrFSskoTvH4FuKtOfLmSFNrQ_XY21BScEpXgg"/>
+<div class="overflow-hidden">
+<p class="text-sm font-bold truncate">Nguyễn Văn A</p>
+<p class="text-xs text-slate-500 truncate">Senior Manager</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 min-h-screen">
+<!-- TopNavBar (Integrated) -->
+<header class="flex justify-between items-center w-full px-6 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<h2 class="font-h1 text-h1 text-on-surface">Cài đặt cá nhân</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined text-slate-500 hover:bg-slate-50 p-2 rounded-full cursor-pointer transition-colors">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</div>
+<span class="material-symbols-outlined text-slate-500 hover:bg-slate-50 p-2 rounded-full cursor-pointer transition-colors">help</span>
+</div>
+</header>
+<div class="p-lg max-w-6xl mx-auto">
+<!-- Navigation Tabs -->
+<div class="flex gap-8 border-b border-slate-200 mb-xl overflow-x-auto">
+<button class="pb-3 border-b-2 border-primary text-primary font-bold text-body-base whitespace-nowrap">Thông tin cơ bản</button>
+<button class="pb-3 border-b-2 border-transparent text-outline hover:text-on-surface transition-colors font-body-base whitespace-nowrap">Đổi mật khẩu</button>
+<button class="pb-3 border-b-2 border-transparent text-outline hover:text-on-surface transition-colors font-body-base whitespace-nowrap">Cấu hình thông báo</button>
+</div>
+<div class="grid grid-cols-12 gap-grid_gutter">
+<!-- Left Section: Basic Info & Avatar -->
+<div class="col-span-12 lg:col-span-8 space-y-grid_gutter">
+<div class="bg-white rounded-xl border border-[#DFE1E6] p-lg shadow-sm">
+<div class="flex items-center justify-between mb-lg">
+<h3 class="font-h2 text-h2">Thông tin nhân viên</h3>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-lg py-sm rounded-lg font-bold text-body-sm transition-all active:opacity-80">
+                                    Lưu thay đổi
+                                </button>
+</div>
+<div class="flex flex-col md:flex-row gap-xl mb-xl">
+<div class="flex flex-col items-center gap-md">
+<div class="relative group">
+<img alt="Avatar" class="w-32 h-32 rounded-full border-4 border-surface-container object-cover" data-alt="professional corporate headshot of a middle-aged male executive with a confident expression in a bright modern office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5ZLqDg5vkpgPnshQVcR69WqYhPkO1fLjfgXMl2dq8yrIdiqYkeY-pNrYMTV4On_1Pb11tbkqbO0rsxFCtEWCeUKib8EwnHeAPNwm_8365DuBFACY6o1HLdCwDAxvdgyop-ie9cfNuZUootLfsb-Yd8NxI3gQ7UGaaU-F7dpSK24y_mALs51qNlVZ4Y2gUEBpEZ28z2hpluf3YZLRoRQhE3HNFM66eHsI6fCxKgsXBOano7AKtpgoVqKCr2Qsx5pnDhtNIrnej7A"/>
+<div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+<span class="material-symbols-outlined text-white text-3xl">photo_camera</span>
+</div>
+</div>
+<p class="text-body-sm text-outline font-medium">PNG hoặc JPG, tối đa 5MB</p>
+</div>
+<div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-lg">
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Họ và tên</label>
+<input class="w-full border border-outline-variant rounded px-md py-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-base" type="text" value="Nguyễn Văn A"/>
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Mã nhân viên</label>
+<input class="w-full border border-outline-variant bg-surface-container-low rounded px-md py-sm font-body-base text-outline cursor-not-allowed" readonly="" type="text" value="EMP-99201"/>
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Phòng ban</label>
+<input class="w-full border border-outline-variant bg-surface-container-low rounded px-md py-sm font-body-base text-outline cursor-not-allowed" readonly="" type="text" value="Phát triển phần mềm (R&amp;D)"/>
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Chức vụ</label>
+<input class="w-full border border-outline-variant bg-surface-container-low rounded px-md py-sm font-body-base text-outline cursor-not-allowed" readonly="" type="text" value="Kỹ sư phần mềm cao cấp"/>
+</div>
+<div class="col-span-full space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Email công ty</label>
+<input class="w-full border border-outline-variant rounded px-md py-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-base" type="email" value="anv.dev@enterprise.com"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Change Password Form (Integrated in main grid) -->
+<div class="bg-white rounded-xl border border-[#DFE1E6] p-lg shadow-sm">
+<div class="flex items-center gap-3 mb-lg">
+<span class="material-symbols-outlined text-primary">lock_reset</span>
+<h3 class="font-h2 text-h2">Đổi mật khẩu</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Mật khẩu cũ</label>
+<div class="relative">
+<input class="w-full border border-outline-variant rounded px-md py-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-base" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Mật khẩu mới</label>
+<div class="relative">
+<input class="w-full border border-outline-variant rounded px-md py-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-base" placeholder="Tối thiểu 8 ký tự" type="password"/>
+</div>
+</div>
+<div class="space-y-base">
+<label class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Xác nhận mật khẩu</label>
+<div class="relative">
+<input class="w-full border border-outline-variant rounded px-md py-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-base" placeholder="Nhập lại mật khẩu mới" type="password"/>
+</div>
+</div>
+</div>
+<div class="mt-lg flex justify-end">
+<button class="border border-outline text-on-surface px-lg py-sm rounded-lg font-bold text-body-sm hover:bg-surface-container transition-all">
+                                    Cập nhật mật khẩu
+                                </button>
+</div>
+</div>
+</div>
+<!-- Right Section: Preferences & Quick Actions -->
+<div class="col-span-12 lg:col-span-4 space-y-grid_gutter">
+<div class="bg-white rounded-xl border border-[#DFE1E6] p-lg shadow-sm">
+<h3 class="font-h2 text-h2 mb-lg">Cấu hình thông báo</h3>
+<div class="space-y-md">
+<div class="flex items-center justify-between p-md bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">mail</span>
+<div>
+<p class="text-body-base font-bold">Email</p>
+<p class="text-[11px] text-outline">Báo cáo KPI hàng tuần</p>
+</div>
+</div>
+<input checked="" class="w-5 h-5 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-md bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">notifications_active</span>
+<div>
+<p class="text-body-base font-bold">Thông báo đẩy</p>
+<p class="text-[11px] text-outline">Cập nhật từ cấp quản lý</p>
+</div>
+</div>
+<input checked="" class="w-5 h-5 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-md bg-surface-container-low rounded-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">chat</span>
+<div>
+<p class="text-body-base font-bold">Trình duyệt</p>
+<p class="text-[11px] text-outline">Cảnh báo KPI dưới mục tiêu</p>
+</div>
+</div>
+<input class="w-5 h-5 text-primary border-outline-variant rounded focus:ring-primary" type="checkbox"/>
+</div>
+</div>
+</div>
+<div class="bg-primary-container text-on-primary rounded-xl p-lg shadow-sm relative overflow-hidden">
+<div class="relative z-10">
+<h4 class="font-h2 text-h2 mb-xs">Bảo mật tài khoản</h4>
+<p class="text-body-sm opacity-80 mb-lg">Tăng cường bảo vệ tài khoản bằng xác thực 2 lớp (2FA).</p>
+<button class="bg-white text-primary px-md py-sm rounded font-bold text-body-sm hover:bg-opacity-90 transition-all">Kích hoạt ngay</button>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl opacity-10 rotate-12">shield</span>
+</div>
+</div>
+</div>
+<!-- Footer Info -->
+<div class="mt-xl flex flex-col md:flex-row justify-between items-center text-outline text-[11px] uppercase tracking-widest font-bold">
+<p>Last login: 24/05/2024 08:45 AM from IP: 192.168.1.1</p>
+<div class="flex gap-lg mt-md md:mt-0">
+<a class="hover:text-primary" href="#">Chính sách bảo mật</a>
+<a class="hover:text-primary" href="#">Điều khoản sử dụng</a>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

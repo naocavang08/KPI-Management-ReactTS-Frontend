@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-container-high": "#e7e7f2",
+                "primary": "#003d9b",
+                "outline-variant": "#c3c6d6",
+                "on-background": "#191b23",
+                "on-secondary-fixed": "#002113",
+                "on-secondary-container": "#00734c",
+                "surface-variant": "#e1e2ec",
+                "on-error-container": "#93000a",
+                "surface-container-lowest": "#ffffff",
+                "surface-bright": "#faf8ff",
+                "on-surface": "#191b23",
+                "tertiary-container": "#7d5200",
+                "tertiary": "#5e3c00",
+                "secondary-container": "#82f9be",
+                "surface": "#faf8ff",
+                "on-tertiary-fixed": "#291800",
+                "secondary": "#006c47",
+                "primary-fixed": "#dae2ff",
+                "tertiary-fixed": "#ffddb3",
+                "surface-dim": "#d9d9e4",
+                "on-error": "#ffffff",
+                "surface-tint": "#0c56d0",
+                "primary-container": "#0052cc",
+                "on-surface-variant": "#434654",
+                "secondary-fixed": "#82f9be",
+                "on-tertiary-fixed-variant": "#624000",
+                "on-primary": "#ffffff",
+                "error-container": "#ffdad6",
+                "on-tertiary-container": "#ffca81",
+                "primary-fixed-dim": "#b2c5ff",
+                "on-secondary": "#ffffff",
+                "background": "#faf8ff",
+                "surface-container": "#ededf8",
+                "error": "#ba1a1a",
+                "outline": "#737685",
+                "on-secondary-fixed-variant": "#005235",
+                "secondary-fixed-dim": "#65dca4",
+                "inverse-primary": "#b2c5ff",
+                "on-tertiary": "#ffffff",
+                "inverse-on-surface": "#f0f0fb",
+                "inverse-surface": "#2e3038",
+                "on-primary-fixed-variant": "#0040a2",
+                "on-primary-container": "#c4d2ff",
+                "tertiary-fixed-dim": "#ffb950",
+                "on-primary-fixed": "#001848",
+                "surface-container-low": "#f3f3fd",
+                "surface-container-highest": "#e1e2ec"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "xs": "8px",
+                "sidebar_width": "260px",
+                "grid_gutter": "24px",
+                "md": "16px",
+                "xl": "32px",
+                "grid_columns": "12",
+                "lg": "24px",
+                "sm": "12px",
+                "base": "4px"
+            },
+            "fontFamily": {
+                "body-base": ["Inter"],
+                "h1": ["Inter"],
+                "label-caps": ["Inter"],
+                "display-kpi": ["Inter"],
+                "h2": ["Inter"],
+                "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                "body-base": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "label-caps": ["11px", {"lineHeight": "16px", "fontWeight": "700"}],
+                "display-kpi": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .login-mesh {
+            background-color: #faf8ff;
+            background-image: radial-gradient(at 0% 0%, hsla(217, 100%, 95%, 1) 0, transparent 50%), 
+                              radial-gradient(at 50% 0%, hsla(225, 100%, 98%, 1) 0, transparent 50%), 
+                              radial-gradient(at 100% 0%, hsla(217, 100%, 95%, 1) 0, transparent 50%);
+        }
+        .focused-shadow:focus-within {
+            box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #0052cc;
+        }
+    </style>
+</head>
+<body class="font-body-base text-on-background bg-background min-h-screen flex flex-col login-mesh">
+<main class="flex-grow flex items-center justify-center px-lg">
+<div class="w-full max-w-md">
+<div class="text-center mb-xl">
+<div class="inline-flex items-center justify-center w-16 h-16 bg-primary-container rounded-xl mb-md">
+<span class="material-symbols-outlined text-white text-4xl" data-icon="leaderboard" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+</div>
+<h1 class="font-h1 text-h1 text-primary mb-xs">KPI Insight</h1>
+<p class="font-body-base text-on-surface-variant">Enterprise Performance Management</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-xl rounded-xl shadow-sm">
+<form action="#" class="space-y-lg" method="POST">
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-xs" for="employee_id">EMAIL NHÂN VIÊN</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline" data-icon="person">person</span>
+<input class="w-full pl-xl pr-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-base focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" id="employee_id" name="employee_id" placeholder="name@company.com" required="" type="text"/>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-xs">
+<label class="block font-label-caps text-label-caps text-on-surface-variant" for="password">MẬT KHẨU</label>
+<a class="text-body-sm font-body-sm text-primary hover:underline" href="#">Quên mật khẩu?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline" data-icon="lock">lock</span>
+<input class="w-full pl-xl pr-md py-sm bg-surface-container-low border border-outline-variant rounded-lg font-body-base focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<div class="flex items-center">
+<input class="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary" id="remember_me" name="remember_me" type="checkbox"/>
+<label class="ml-xs font-body-sm text-on-surface-variant cursor-pointer" for="remember_me">Ghi nhớ đăng nhập</label>
+</div>
+<button class="w-full bg-primary-container text-on-primary py-md rounded-lg font-h2 text-body-base hover:bg-primary transition-colors active:opacity-80 flex items-center justify-center gap-xs" type="submit">
+                        Đăng nhập
+                        <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<div class="mt-xl pt-lg border-t border-outline-variant/30 text-center">
+<p class="text-body-sm text-on-surface-variant mb-md">Hoặc đăng nhập nhanh bằng SSO</p>
+<div class="flex gap-md justify-center">
+<button class="flex items-center gap-xs px-md py-xs border border-outline-variant rounded-lg font-body-sm hover:bg-surface-container-high transition-colors">
+<img alt="Google Logo" class="w-5 h-5" data-alt="Official Google brand logo with vibrant primary colors and minimalist flat design style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpJS1gZ6lHeN5EjlXBiUPjIBIMMrIXBt7l5fl61Rfo4LgoqEVQ6wkLVzSiUscRdfLkCfg2sb6-GuCij5FH4S928OG3rQywiK8j7azUHYXYF7IRM7JyM4JKmw0rEGF1liDPtBv3vcC9pTs744ATSBCTPjnZ-eDXngL_mX2NITpnOBdpf9iauqg9mwi2j4gW_1jT5sZ_zZkwZf3atJuJEAODRh1SGUfJMP-XZ99gp0Hygr9zgWIwG9bupRTQm30_BfX0NDa-DsIu0w"/>
+                            Google Workspace
+                        </button>
+</div>
+</div>
+</div>
+<div class="mt-xl grid grid-cols-1 md:grid-cols-2 gap-md opacity-70">
+<div class="p-md rounded-lg bg-surface-container-high flex items-start gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="security">security</span>
+<div>
+<p class="text-body-sm font-bold text-primary">Mã hóa 256-bit</p>
+<p class="text-body-sm">Dữ liệu được bảo mật tuyệt đối</p>
+</div>
+</div>
+<div class="p-md rounded-lg bg-surface-container-high flex items-start gap-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="verified_user">verified_user</span>
+<div>
+<p class="text-body-sm font-bold text-secondary">Truy cập nội bộ</p>
+<p class="text-body-sm">Hệ thống giám sát 24/7</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="py-lg px-xl text-center border-t border-outline-variant/10">
+<div class="max-w-4xl mx-auto flex flex-col items-center gap-xs">
+<div class="flex items-center gap-xs text-on-surface-variant font-label-caps opacity-60">
+<span class="material-symbols-outlined text-sm" data-icon="info">info</span>
+                CẢNH BÁO BẢO MẬT NỘI BỘ
+            </div>
+<p class="text-body-sm text-on-surface-variant max-w-xl">
+                Đây là hệ thống quản lý chỉ số KPI dành riêng cho nhân viên công ty. Mọi hành vi truy cập trái phép hoặc tiết lộ dữ liệu hiệu suất sẽ bị xử lý theo quy định bảo mật thông tin cấp độ 3 của doanh nghiệp.
+            </p>
+<p class="text-body-sm font-label-caps mt-xs text-outline">
+                © 2024 KPI Insight. All Rights Reserved.
+            </p>
+</div>
+</footer>
+<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+<div class="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary-fixed-dim rounded-full blur-[120px] opacity-20"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary-fixed-dim rounded-full blur-[120px] opacity-20"></div>
+</div>
+</body></html>
