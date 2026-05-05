@@ -4,6 +4,7 @@ import PublicRoute from './PublicRoute';
 import ProjectLayout from '../layout/ProjectLayout';
 import LoginPage from '../pages/Auth/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
+import SettingPage from '../pages/SettingPage';
 
 const AppRoutes = () => {
     return (
@@ -27,6 +28,7 @@ const AppRoutes = () => {
                 }
             >
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/settings" element={<SettingPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />
