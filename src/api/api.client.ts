@@ -1,6 +1,5 @@
 import axios from "axios";
 import queryString from "query-string";
-import { getAuthMockAdapter } from "@/mocks/auth.mock";
 import { getTokenAccess, removeTokenAccess } from "../lib/localStorage";
 
 const baseURL = axios.create({
@@ -21,13 +20,6 @@ baseURL.interceptors.request.use((request) => {
         request.headers['Authorization'] = `Bearer ${accessToken}`;
     } else {
         delete request.headers['Authorization'];
-    }
-
-    if (import.meta.env.DEV) {
-        const mockAdapter = getAuthMockAdapter(request);
-        if (mockAdapter) {
-            request.adapter = mockAdapter;
-        }
     }
 
     return request;

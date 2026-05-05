@@ -52,7 +52,7 @@ const LoginPage = () => {
 							<Typography variant="overline" color="text.secondary">
 								Project Hub
 							</Typography>
-							<Typography variant="h4" fontWeight={700}>
+							<Typography variant="h4" sx={{ fontWeight: 700 }}>
 								Welcome back
 							</Typography>
 							<Typography color="text.secondary">
@@ -98,22 +98,27 @@ const LoginPage = () => {
 											message: "Password must be at least 6 characters",
 										},
 									})}
-									InputProps={{
-										endAdornment: (
-											<InputAdornment position="end">
-												<IconButton
-													size="small"
-													onClick={() => togglePassword()}
-													aria-label={showPassword ? "Hide password" : "Show password"}
-												>
-													{showPassword ? <MdVisibilityOff /> : <MdVisibility />}
-												</IconButton>
-											</InputAdornment>
-										),
+									slotProps={{
+										input: {
+											endAdornment: (
+												<InputAdornment position="end">
+													<IconButton
+														size="small"
+														onClick={() => togglePassword()}
+														aria-label={showPassword ? "Hide password" : "Show password"}
+													>
+														{showPassword ? <MdVisibilityOff /> : <MdVisibility />}
+													</IconButton>
+												</InputAdornment>
+											),
+										},
 									}}
 								/>
 
-								<Stack direction="row" justifyContent="space-between" alignItems="center">
+								<Stack
+									direction="row"
+									sx={{ justifyContent: "space-between", alignItems: "center" }}
+								>
 									<Link href="#" underline="hover" color="text.secondary">
 										Forgot password?
 									</Link>

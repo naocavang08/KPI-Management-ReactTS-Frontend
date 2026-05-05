@@ -1,20 +1,22 @@
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useAuthStore } from "@/stores/auth.store";
-import { useToggle } from "@/hooks/useCustomeHook";
-import { useToastify } from "@/hooks/useToastify";
-import type { LoginRequest } from "@/interfaces/auth.types";
+import { useAuthStore } from "../../stores/auth.store";
+import { useToggle } from "../../hooks/useCustomeHook";
+import { useToastify } from "../../hooks/useToastify";
+import type { LoginRequest } from "../../interfaces/auth.types";
 
 const defaultValues: LoginRequest = {
     email: "",
     password: "",
 };
 
+type AuthState = ReturnType<typeof useAuthStore.getState>;
+
 export const useLoginPage = () => {
     const navigate = useNavigate();
-    const isLoading = useAuthStore((state) => state.isLoading);
-    const login = useAuthStore((state) => state.login);
+    const isLoading = useAuthStore((state: AuthState) => state.isLoading);
+    const login = useAuthStore((state: AuthState) => state.login);
 
     const form = useForm<LoginRequest>({
         defaultValues,

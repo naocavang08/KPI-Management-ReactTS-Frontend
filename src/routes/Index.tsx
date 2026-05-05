@@ -1,9 +1,9 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
-import ProjectLayout from '@/layout/ProjectLayout';
-import LoginPage from '@/pages/Auth/LoginPage';
-import DashboardPage from '@/pages/DashboardPage';
+import ProjectLayout from '../layout/ProjectLayout';
+import LoginPage from '../pages/Auth/LoginPage';
+import DashboardPage from '../pages/DashboardPage';
 
 const AppRoutes = () => {
     return (
