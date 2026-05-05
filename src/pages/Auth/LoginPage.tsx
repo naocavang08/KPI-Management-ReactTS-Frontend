@@ -1,7 +1,7 @@
 import {
 	Box,
 	Button,
-	Container,
+	Chip,
 	CssBaseline,
 	Divider,
 	IconButton,
@@ -13,7 +13,11 @@ import {
 	Typography,
 } from "@mui/material";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import desginToken from "../../theme/desginToken";
 import { useLoginPage } from "./useLoginPage";
+
+const { colors, components, elevation, radius, semantic, spacing, typography } =
+	desginToken;
 
 const LoginPage = () => {
 	const { form, onSubmit, isLoading, showPassword, togglePassword } = useLoginPage();
@@ -29,113 +33,308 @@ const LoginPage = () => {
 		<Box
 			sx={{
 				minHeight: "100vh",
-				display: "flex",
-				alignItems: "center",
-				background:
-					"linear-gradient(135deg, rgba(250, 247, 242, 1) 0%, rgba(246, 233, 215, 1) 45%, rgba(225, 243, 252, 1) 100%)",
-				py: { xs: 6, md: 10 },
+				backgroundColor: elevation.level0.background,
+				backgroundImage: `
+					radial-gradient(circle at top left, rgba(218, 226, 255, 0.95), transparent 28%),
+					linear-gradient(135deg, ${colors.background} 0%, ${colors.surfaceContainerLow} 50%, ${colors.surfaceContainer} 100%)
+				`,
+				px: { xs: spacing.md, md: spacing.lg },
+				py: { xs: spacing.lg, md: spacing.xl },
 			}}
 		>
 			<CssBaseline />
-			<Container maxWidth="sm">
+
+			<Box
+				sx={{
+					maxWidth: "500px",
+					mx: "auto",
+					minHeight: "calc(100vh - 64px)",
+					display: "flex",
+					flexDirection: "column",
+					justifyContent: "center",
+					alignItems: "center",
+				}}
+			>
 				<Paper
-					elevation={4}
+					elevation={0}
 					sx={{
-						p: { xs: 3, md: 5 },
-						borderRadius: 3,
-						backgroundColor: "rgba(255, 255, 255, 0.94)",
-						boxShadow: "0 20px 60px rgba(31, 41, 55, 0.15)",
+						width: "100%",
+						display: "flex",
+						flexDirection: "column",
+						justifyContent: "center",
+						p: { xs: spacing.lg, md: spacing.xl },
+						borderRadius: radius.xl,
+						backgroundColor: components.card.background,
+						border: elevation.level1.border,
+						boxShadow: elevation.level2.boxShadow,
 					}}
 				>
-					<Stack spacing={3}>
-						<Stack spacing={1}>
-							<Typography variant="overline" color="text.secondary">
-								Project Hub
+					<Stack spacing={spacing.lg}>
+						<Stack spacing={spacing.sm}>
+							<Stack
+								direction="row"
+								spacing={spacing.sm}
+								sx={{ alignItems: "center" }}
+							>
+								<Box
+									sx={{
+										width: 12,
+										height: 12,
+										borderRadius: radius.full,
+										backgroundColor: semantic.info.main,
+										boxShadow: `0 0 0 6px ${semantic.info.container}`,
+									}}
+								/>
+								<Typography
+									sx={{
+										fontFamily: typography.labelCaps.fontFamily,
+										fontSize: typography.labelCaps.fontSize,
+										fontWeight: typography.labelCaps.fontWeight,
+										lineHeight: typography.labelCaps.lineHeight,
+										textTransform: "uppercase",
+										letterSpacing: "0.08em",
+										color: colors.onSurfaceVariant,
+									}}
+								>
+									Secure access
+								</Typography>
+							</Stack>
+
+							<Typography
+								sx={{
+									fontFamily: typography.h1.fontFamily,
+									fontSize: typography.h1.fontSize,
+									fontWeight: typography.h1.fontWeight,
+									lineHeight: typography.h1.lineHeight,
+									color: colors.onSurface,
+								}}
+							>
+								Sign in to your workspace
 							</Typography>
-							<Typography variant="h4" sx={{ fontWeight: 700 }}>
-								Welcome back
-							</Typography>
-							<Typography color="text.secondary">
-								Sign in to manage your projects and team updates.
+
+							<Typography
+								sx={{
+									fontFamily: typography.bodyBase.fontFamily,
+									fontSize: typography.bodyBase.fontSize,
+									fontWeight: typography.bodyBase.fontWeight,
+									lineHeight: typography.bodyBase.lineHeight,
+									color: colors.onSurfaceVariant,
+								}}
+							>
+								Use your company account to open dashboards, reporting cycles,
+								and team scorecards.
 							</Typography>
 						</Stack>
 
-						<Divider />
+						<Divider sx={{ borderColor: colors.outlineVariant }} />
 
 						<Box component="form" noValidate onSubmit={handleSubmit(onSubmit)}>
-							<Stack spacing={2.5}>
-								<TextField
-									label="Email"
-									placeholder="you@example.com"
-									type="email"
-									autoComplete="email"
-									error={Boolean(errors.email)}
-									helperText={errors.email?.message}
-									{...register("email", {
-										required: "Email is required",
-										pattern: {
-											value: /\S+@\S+\.\S+/,
-											message: "Enter a valid email",
-										},
-									})}
-								/>
+							<Stack spacing={spacing.md}>
+								<Box>
+									<Typography
+										component="label"
+										htmlFor="email"
+										sx={{
+											display: "block",
+											mb: spacing.xs,
+											fontFamily: typography.labelCaps.fontFamily,
+											fontSize: typography.labelCaps.fontSize,
+											fontWeight: typography.labelCaps.fontWeight,
+											lineHeight: typography.labelCaps.lineHeight,
+											textTransform: "uppercase",
+											letterSpacing: "0.08em",
+											color: colors.onSurfaceVariant,
+										}}
+									>
+										Email
+									</Typography>
+									<TextField
+										id="email"
+										fullWidth
+										placeholder="name@company.com"
+										type="email"
+										autoComplete="email"
+										error={Boolean(errors.email)}
+										helperText={errors.email?.message}
+										{...register("email", {
+											required: "Email is required",
+											pattern: {
+												value: /\S+@\S+\.\S+/,
+												message: "Enter a valid email",
+											},
+										})}
+										sx={{
+											"& .MuiInputBase-root": {
+												minHeight: 52,
+												borderRadius: radius.button,
+												backgroundColor: components.input.background,
+												fontFamily: typography.bodyBase.fontFamily,
+												fontSize: typography.bodyBase.fontSize,
+												color: components.input.text,
+											},
+											"& .MuiOutlinedInput-notchedOutline": {
+												borderColor: colors.outlineVariant,
+											},
+											"& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
+												borderColor: colors.outline,
+											},
+											"& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+												borderColor: colors.primaryContainer,
+												borderWidth: "1px",
+											},
+											"& .MuiFormHelperText-root": {
+												mt: spacing.xs,
+												mx: 0,
+												fontFamily: typography.bodySm.fontFamily,
+												fontSize: typography.bodySm.fontSize,
+												lineHeight: typography.bodySm.lineHeight,
+											},
+										}}
+									/>
+								</Box>
 
-								<TextField
-									label="Password"
-									type={showPassword ? "text" : "password"}
-									autoComplete="current-password"
-									error={Boolean(errors.password)}
-									helperText={errors.password?.message}
-									{...register("password", {
-										required: "Password is required",
-										pattern: {
-											value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
-											message:
-												"Password must contain letters and numbers",
-										},
-										minLength: {
-											value: 6,
-											message: "Password must be at least 6 characters",
-										},
-									})}
-									slotProps={{
-										input: {
-											endAdornment: (
-												<InputAdornment position="end">
-													<IconButton
-														size="small"
-														onClick={() => togglePassword()}
-														aria-label={showPassword ? "Hide password" : "Show password"}
-													>
-														{showPassword ? <MdVisibilityOff /> : <MdVisibility />}
-													</IconButton>
-												</InputAdornment>
-											),
-										},
-									}}
-								/>
+								<Box>
+									<Typography
+										component="label"
+										htmlFor="password"
+										sx={{
+											display: "block",
+											mb: spacing.xs,
+											fontFamily: typography.labelCaps.fontFamily,
+											fontSize: typography.labelCaps.fontSize,
+											fontWeight: typography.labelCaps.fontWeight,
+											lineHeight: typography.labelCaps.lineHeight,
+											textTransform: "uppercase",
+											letterSpacing: "0.08em",
+											color: colors.onSurfaceVariant,
+										}}
+									>
+										Password
+									</Typography>
+									<TextField
+										id="password"
+										fullWidth
+										type={showPassword ? "text" : "password"}
+										autoComplete="current-password"
+										error={Boolean(errors.password)}
+										helperText={errors.password?.message}
+										{...register("password", {
+											required: "Password is required",
+											pattern: {
+												value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
+												message: "Password must contain letters and numbers",
+											},
+											minLength: {
+												value: 6,
+												message: "Password must be at least 6 characters",
+											},
+										})}
+										slotProps={{
+											input: {
+												endAdornment: (
+													<InputAdornment position="end">
+														<IconButton
+															size="small"
+															onClick={() => togglePassword()}
+															aria-label={
+																showPassword ? "Hide password" : "Show password"
+															}
+															sx={{
+																color: colors.onSurfaceVariant,
+															}}
+														>
+															{showPassword ? <MdVisibilityOff /> : <MdVisibility />}
+														</IconButton>
+													</InputAdornment>
+												),
+											},
+										}}
+										sx={{
+											"& .MuiInputBase-root": {
+												minHeight: 52,
+												borderRadius: radius.button,
+												backgroundColor: components.input.background,
+												fontFamily: typography.bodyBase.fontFamily,
+												fontSize: typography.bodyBase.fontSize,
+												color: components.input.text,
+											},
+											"& .MuiOutlinedInput-notchedOutline": {
+												borderColor: colors.outlineVariant,
+											},
+											"& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
+												borderColor: colors.outline,
+											},
+											"& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+												borderColor: colors.primaryContainer,
+												borderWidth: "1px",
+											},
+											"& .MuiFormHelperText-root": {
+												mt: spacing.xs,
+												mx: 0,
+												fontFamily: typography.bodySm.fontFamily,
+												fontSize: typography.bodySm.fontSize,
+												lineHeight: typography.bodySm.lineHeight,
+											},
+										}}
+									/>
+								</Box>
 
 								<Stack
-									direction="row"
-									sx={{ justifyContent: "space-between", alignItems: "center" }}
+									direction={{ xs: "column", sm: "row" }}
+									spacing={spacing.sm}
+									sx={{
+										alignItems: { xs: "flex-start", sm: "center" },
+										justifyContent: "space-between",
+									}}
 								>
-									<Link href="#" underline="hover" color="text.secondary">
+									<Link
+										href="#"
+										underline="hover"
+										sx={{
+											fontFamily: typography.bodySm.fontFamily,
+											fontSize: typography.bodySm.fontSize,
+											lineHeight: typography.bodySm.lineHeight,
+											color: colors.primaryContainer,
+										}}
+									>
 										Forgot password?
 									</Link>
-									<Typography variant="caption" color="text.secondary">
-										Need access? Contact admin.
-									</Typography>
+									<Chip
+										label="Admin approval required for new accounts"
+										sx={{
+											height: 28,
+											borderRadius: radius.chip,
+											backgroundColor: semantic.warning.container,
+											color: semantic.warning.onContainer,
+											fontFamily: typography.bodySm.fontFamily,
+											fontSize: typography.bodySm.fontSize,
+										}}
+									/>
 								</Stack>
 
 								<Button
 									type="submit"
 									variant="contained"
-									size="large"
 									disabled={loading}
 									sx={{
+										minHeight: 52,
+										borderRadius: radius.button,
+										backgroundColor: components.button.primary.background,
+										color: components.button.primary.color,
+										fontFamily: typography.bodyBase.fontFamily,
+										fontSize: typography.bodyBase.fontSize,
+										fontWeight: 700,
+										lineHeight: typography.bodyBase.lineHeight,
 										textTransform: "none",
-										fontWeight: 600,
-										py: 1.4,
+										boxShadow: "none",
+										"&:hover": {
+											backgroundColor: components.button.primary.hoverBackground,
+											boxShadow: "none",
+										},
+										"&.Mui-disabled": {
+											backgroundColor: colors.surfaceDim,
+											color: colors.onSurfaceVariant,
+										},
 									}}
 								>
 									{loading ? "Signing in..." : "Sign in"}
@@ -143,12 +342,21 @@ const LoginPage = () => {
 							</Stack>
 						</Box>
 
-						<Typography variant="caption" color="text.secondary">
-							By continuing you agree to the platform usage policy.
+						<Typography
+							sx={{
+								fontFamily: typography.bodySm.fontFamily,
+								fontSize: typography.bodySm.fontSize,
+								fontWeight: typography.bodySm.fontWeight,
+								lineHeight: typography.bodySm.lineHeight,
+								color: colors.onSurfaceVariant,
+								textAlign: "center",
+							}}
+						>
+							© {new Date().getFullYear()} KPI Management. All rights reserved.
 						</Typography>
 					</Stack>
 				</Paper>
-			</Container>
+			</Box>
 		</Box>
 	);
 };
