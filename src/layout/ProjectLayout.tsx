@@ -42,10 +42,10 @@ const { colors, elevation, layout, radius, semantic, spacing, typography } = des
 type NavigationItem = {
 	id: string;
 	label: string;
-	icon: any;
+	icon: React.ElementType;
 	path?: string;
 	disabled?: boolean;
-	children?: { id: string; label: string; icon?: any; path: string }[];
+	children?: { id: string; label: string; icon?: React.ElementType; path: string }[];
 };
 
 const navigationItems: NavigationItem[] = [
@@ -314,7 +314,7 @@ const ProjectLayout = () => {
 								<Box
 									component={hasChildren ? "div" : NavLink}
 									{...(hasChildren ? {} : { to: item.path! })}
-									onClick={hasChildren ? (e: any) => toggleExpand(item.id, e) : () => setMobileOpen(false)}
+									onClick={hasChildren ? (e: React.MouseEvent<HTMLDivElement>) => toggleExpand(item.id, e) : () => setMobileOpen(false)}
 									sx={{
 										display: "flex",
 										alignItems: "center",
