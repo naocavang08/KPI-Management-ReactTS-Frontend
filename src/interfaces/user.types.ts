@@ -1,25 +1,16 @@
 export interface User {
-    id: number;
-    name: string;
-    email: string;
-    roleId: number;
-    roleName: string;
-    status: string;
-    teamId: number;
-    teamName: string;
-    createdAt: string;
+  id: string;
+  fullName: string;
+  email: string;
+  username: string;
+  role: string;
+  department: string;
+  status: 'active' | 'inactive';
+  avatar?: string;
 }
 
-export interface CreateUserRequest {
-    name: string;
-    email: string;
-    roleId: number;
-    teamId: number;
-}
-
-export interface UpdateUserRequest {
-    name?: string;
-    roleId?: number;
-    status?: string;
-    teamId?: number;
+export interface UserFilters {
+  search?: string;
+  role?: string;
+  status?: string;
 }

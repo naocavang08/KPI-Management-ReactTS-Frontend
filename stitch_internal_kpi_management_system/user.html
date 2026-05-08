@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#ffddb3",
+                    "primary": "#003d9b",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed": "#291800",
+                    "surface-container-high": "#e7e7f2",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#d9d9e4",
+                    "on-primary-fixed": "#001848",
+                    "background": "#faf8ff",
+                    "on-tertiary-container": "#ffca81",
+                    "surface-tint": "#0c56d0",
+                    "on-background": "#191b23",
+                    "primary-container": "#0052cc",
+                    "secondary-container": "#82f9be",
+                    "primary-fixed-dim": "#b2c5ff",
+                    "on-secondary-fixed": "#002113",
+                    "on-surface-variant": "#434654",
+                    "on-primary-fixed-variant": "#0040a2",
+                    "tertiary": "#5e3c00",
+                    "error": "#ba1a1a",
+                    "outline": "#737685",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#005235",
+                    "surface-variant": "#e1e2ec",
+                    "on-tertiary": "#ffffff",
+                    "inverse-surface": "#2e3038",
+                    "tertiary-fixed-dim": "#ffb950",
+                    "secondary": "#006c47",
+                    "inverse-on-surface": "#f0f0fb",
+                    "inverse-primary": "#b2c5ff",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#dae2ff",
+                    "outline-variant": "#c3c6d6",
+                    "tertiary-container": "#7d5200",
+                    "surface-bright": "#faf8ff",
+                    "secondary-fixed-dim": "#65dca4",
+                    "surface": "#faf8ff",
+                    "on-secondary": "#ffffff",
+                    "surface-container": "#ededf8",
+                    "surface-container-low": "#f3f3fd",
+                    "on-surface": "#191b23",
+                    "surface-container-highest": "#e1e2ec",
+                    "secondary-fixed": "#82f9be",
+                    "on-tertiary-fixed-variant": "#624000",
+                    "on-primary-container": "#c4d2ff",
+                    "on-secondary-container": "#00734c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "sidebar_width": "260px",
+                    "xl": "32px",
+                    "sm": "12px",
+                    "xs": "8px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "grid_columns": "12",
+                    "grid_gutter": "24px"
+            },
+            "fontFamily": {
+                    "display-kpi": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "h2": ["Inter"],
+                    "body-base": ["Inter"],
+                    "h1": ["Inter"],
+                    "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                    "display-kpi": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-base": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-surface-container-low border-r border-outline-variant flex flex-col py-lg overflow-y-auto">
+<div class="px-lg mb-xl">
+<h1 class="font-h2 text-h2 font-bold text-primary">KPI Manager</h1>
+<p class="text-body-sm text-on-surface-variant">Enterprise Console</p>
+</div>
+<nav class="flex-1 space-y-base">
+<a class="flex items-center gap-md text-on-surface-variant px-lg py-md hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-base text-body-base">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-lg py-md hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-base text-body-base">KPI Library</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-lg py-md hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+<span class="font-body-base text-body-base">Reports</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-lg py-md hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-body-base text-body-base">Team Performance</span>
+</a>
+<!-- Active Tab: User Management maps to Settings/Admin context -->
+<a class="flex items-center gap-md bg-primary-fixed text-on-primary-fixed border-l-4 border-primary px-lg py-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-base text-body-base">Settings</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-md">
+<a class="flex items-center gap-md text-on-surface-variant px-lg py-md hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-body-base text-body-base">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-lg py-md hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-body-base text-body-base">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="ml-[260px]">
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] z-40 bg-surface border-b border-outline-variant h-16 flex justify-between items-center px-lg">
+<div class="flex items-center gap-md flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-primary/20 text-body-base" placeholder="Tìm kiếm người dùng..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<img alt="Executive User Profile" class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A professional headshot of a high-level corporate executive with a friendly but authoritative expression. The person is wearing a sharp, navy blue tailored suit in a clean, brightly lit modern office setting. The photography style is high-end corporate portraiture with a shallow depth of field, focusing sharply on the face while softening the sleek office background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKBlQJUx0fwp1JWnvJhoLqzsT3wtT0vxgmf4xswmv4kpowK4Uzm8L-XqSpztaBJeJbWPdQefRMrcwes9mu9wH1_z9D3ynWJPgIF6LY038zRpSKwF3kb6t3n1PIpJC6dtaj_rM2BqhaQYtQFly520P3BiKhUeet-E3yEmaSYeW12uBfn7ek1p7t02FeJbdxEVfPLzJb4Nk1PXzg1kZSL3fq1ko1cmSnS832XTijztvO4OH9J06PO4Fnwp6iymMtIjkxxhbHcXNFNg"/>
+</div>
+</header>
+<!-- Canvas -->
+<main class="pt-24 px-lg pb-xl max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-xl">
+<div>
+<h2 class="font-h1 text-h1 text-on-surface mb-xs">Quản lý người dùng</h2>
+<div class="flex items-center gap-sm">
+<span class="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-label-caps rounded">248 NHÂN VIÊN</span>
+<span class="text-body-sm text-on-surface-variant">Hệ thống đang vận hành ổn định</span>
+</div>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-lg py-md rounded-lg flex items-center gap-xs font-semibold transition-all shadow-sm">
+<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
+                    Thêm người dùng mới
+                </button>
+</div>
+<!-- Filters Section -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg mb-lg shadow-sm">
+<div class="grid grid-cols-4 gap-lg items-end">
+<div class="space-y-xs">
+<label class="block text-label-caps text-outline uppercase tracking-wider">Phòng ban</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg px-md py-2 text-body-base focus:ring-2 focus:ring-primary/20">
+<option>Tất cả phòng ban</option>
+<option>Phát triển phần mềm</option>
+<option>Marketing</option>
+<option>Nhân sự</option>
+<option>Tài chính</option>
+</select>
+</div>
+<div class="space-y-xs">
+<label class="block text-label-caps text-outline uppercase tracking-wider">Chức vụ</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg px-md py-2 text-body-base focus:ring-2 focus:ring-primary/20">
+<option>Tất cả chức vụ</option>
+<option>Senior Developer</option>
+<option>Product Owner</option>
+<option>Lead Designer</option>
+</select>
+</div>
+<div class="space-y-xs">
+<label class="block text-label-caps text-outline uppercase tracking-wider">Vai trò (RBAC)</label>
+<select class="w-full bg-surface border border-outline-variant rounded-lg px-md py-2 text-body-base focus:ring-2 focus:ring-primary/20">
+<option>Tất cả vai trò</option>
+<option>Admin</option>
+<option>Manager</option>
+<option>Employee</option>
+</select>
+</div>
+<div>
+<button class="w-full h-[40px] flex items-center justify-center gap-xs text-primary border border-primary hover:bg-primary/5 rounded-lg font-semibold transition-all">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+                            Áp dụng bộ lọc
+                        </button>
+</div>
+</div>
+</div>
+<!-- User List Table -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-lg py-md text-label-caps text-outline uppercase">Nhân viên</th>
+<th class="px-lg py-md text-label-caps text-outline uppercase">Liên hệ &amp; ID</th>
+<th class="px-lg py-md text-label-caps text-outline uppercase">Phòng ban &amp; Chức vụ</th>
+<th class="px-lg py-md text-label-caps text-outline uppercase">Vai trò</th>
+<th class="px-lg py-md text-label-caps text-outline uppercase">Trạng thái</th>
+<th class="px-lg py-md text-label-caps text-outline uppercase text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- User Row 1 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<img alt="Avatar User" class="w-10 h-10 rounded-full object-cover" data-alt="A portrait of a male professional in his early 30s with short hair and glasses, smiling confidently. He is wearing a clean white shirt in a minimalist architectural environment with soft sunlight streaming in. The image has a very high clarity and professional feel, utilizing a palette of soft neutrals and cool blues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjhJtAcQj42sC82iGDR-okfna5uKhG_4PRVTVvqI2rohuN1mcWBbp1xzV8BTDprpAWBs8odJSP71PjqOb5RLKj9kPpimLZopNx22lfUa3H7X8JQ1BwKlgbGfrUI3fa9N-3bHJGK1LGzDgFfZZsfmIR_w0GaREqI1CevjnPxEsyA5KYim6QcNuGnM-Z7WmWnDPze0GwnDOFdtMptT7SKg_sqKbs2pTOdp418vQlHJ_JdRfuP59N5O4C5XFROZ8z_z6bMy774n17pg"/>
+<div>
+<p class="font-semibold text-on-surface">Nguyễn Văn An</p>
+<p class="text-body-sm text-on-surface-variant">Mã NV: KPI-1024</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base text-on-surface">an.nguyen@company.com</p>
+<p class="text-body-sm text-outline">Internal ID: 9821</p>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base font-medium">Phát triển phần mềm</p>
+<p class="text-body-sm text-on-surface-variant">Senior Engineer</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-3 py-1 bg-primary-fixed text-on-primary-fixed text-label-caps rounded-full border border-primary/20">ADMIN</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-body-sm font-medium text-secondary">Đang hoạt động</span>
+</div>
+</td>
+<td class="px-lg py-md text-right">
+<div class="flex justify-end gap-sm">
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Sửa">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Chi tiết">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-full transition-all text-error" title="Khóa">
+<span class="material-symbols-outlined" data-icon="lock_open">lock_open</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- User Row 2 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<img alt="Avatar User" class="w-10 h-10 rounded-full object-cover" data-alt="Close-up portrait of a female creative professional with long dark hair and a warm smile. She is in a vibrant, modern office environment with colorful glass partitions and lush green office plants in the background. The lighting is bright and cheerful, reflecting a high-energy creative corporate culture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj9kIP1Zb8fsygR9Z_AGLF1ttDg9xF7IKtZ77T13tBlYNrhByjJRQHr8XVzsn_pwxq0gYvaGtpLrzf5p6lkpQHO_-skpbX7dmIA_I3IpDGfqZwZrZH339meqGtOk7ALI64NG55jovdSgDyGStRI1gb24eOsECKUczvQvtQDhVNqTBKoUeHhgPwUr4oXc_L7TjXY9G5PCZTSQjzYlw1Im04xGMVB-lP5mIbkaOVJ3kKD1JZoMvt64pkOXfFajIEyhvpEaak-L_0Wg"/>
+<div>
+<p class="font-semibold text-on-surface">Lê Thị Thu Thảo</p>
+<p class="text-body-sm text-on-surface-variant">Mã NV: KPI-2055</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base text-on-surface">thao.le@company.com</p>
+<p class="text-body-sm text-outline">Internal ID: 4421</p>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base font-medium">Marketing</p>
+<p class="text-body-sm text-on-surface-variant">Content Manager</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-container text-label-caps rounded-full border border-secondary/20">MANAGER</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="text-body-sm font-medium text-outline">Đang ngoại tuyến</span>
+</div>
+</td>
+<td class="px-lg py-md text-right">
+<div class="flex justify-end gap-sm">
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Sửa">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Chi tiết">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-full transition-all text-error" title="Khóa">
+<span class="material-symbols-outlined" data-icon="lock_open">lock_open</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- User Row 3 -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<img alt="Avatar User" class="w-10 h-10 rounded-full object-cover" data-alt="Portrait of a male professional executive with a well-groomed beard and confident posture. He is dressed in a charcoal grey business shirt, standing in a sleek, high-ceilinged lobby of a contemporary skyscraper. The composition is clean and focused, emphasizing trustworthiness and leadership within a corporate modern context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcDlVDz5nxIq5d3Rtn3gnUaPUXG2XA-KngvOD7OF4tV2iJlQ4TQM_TYHNXaexWwxp0b_CBDxrZM4xefjNV611eGA6AjH3u5KgHNG_haehEVv8MSNMQHLPmwjaXP9hQy0lRkJ5Mu80BsfIKZsZicBbh9l3oK4EHAN1egIbhlF1HySj_O3SOaOWkWdr1DlcGbhithumdl7Ln1WeeAQ_oKsuN5_8nSWGHZS_auDW1dyhRZghYaNxdMdwfSpeusW4m8EJw7b0AjRTS1A"/>
+<div>
+<p class="font-semibold text-on-surface">Trần Minh Quân</p>
+<p class="text-body-sm text-on-surface-variant">Mã NV: KPI-0091</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base text-on-surface">quan.tran@company.com</p>
+<p class="text-body-sm text-outline">Internal ID: 1205</p>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base font-medium">Nhân sự</p>
+<p class="text-body-sm text-on-surface-variant">HR Coordinator</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface-variant text-label-caps rounded-full border border-outline-variant">EMPLOYEE</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-body-sm font-medium text-error">Đã khóa</span>
+</div>
+</td>
+<td class="px-lg py-md text-right">
+<div class="flex justify-end gap-sm">
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Sửa">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Chi tiết">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+<button class="p-2 bg-error text-on-error rounded-full transition-all" title="Mở khóa">
+<span class="material-symbols-outlined" data-icon="lock">lock</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- More rows would be here for a real system -->
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<img alt="Avatar User" class="w-10 h-10 rounded-full object-cover" data-alt="Portrait of a young male designer in a creative studio. He is wearing a casual black t-shirt and has a focused, thoughtful expression. The background shows a modern workspace with dual monitors displaying design software. The lighting is directional and dramatic, highlighting his profile in a clean, high-contrast style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt3bcwq1EYwXTIjEEI9m-bD9KqG9zKQ2VMI5udi7xSRDcD3qjgZupH8yPMQ7Jax5T7W3ayrwcXfHdn8iU36nOHk_ObdMHPcn25opeWPSch3Hk-A5cjgrgpl6sC--NxE1TxL__0WzlV8tAsXaqJvtkTqzJ3LcjF2Nz7YHJTO25HsR4LvM1JxBODHadmV2ZcezNKLkCezRwvLGnlhANEEBeHA9_3gy7s1LKKG8BxkSrUCCSpfOyVxY-mq61wHjldqvi5f1UNZ1UXGg"/>
+<div>
+<p class="font-semibold text-on-surface">Phạm Hoàng Nam</p>
+<p class="text-body-sm text-on-surface-variant">Mã NV: KPI-3321</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base text-on-surface">nam.pham@company.com</p>
+<p class="text-body-sm text-outline">Internal ID: 5543</p>
+</td>
+<td class="px-lg py-md">
+<p class="text-body-base font-medium">Thiết kế</p>
+<p class="text-body-sm text-on-surface-variant">UI/UX Designer</p>
+</td>
+<td class="px-lg py-md">
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface-variant text-label-caps rounded-full border border-outline-variant">EMPLOYEE</span>
+</td>
+<td class="px-lg py-md">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-body-sm font-medium text-secondary">Đang hoạt động</span>
+</div>
+</td>
+<td class="px-lg py-md text-right">
+<div class="flex justify-end gap-sm">
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Sửa">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-all text-on-surface-variant" title="Chi tiết">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+<button class="p-2 hover:bg-error/10 rounded-full transition-all text-error" title="Khóa">
+<span class="material-symbols-outlined" data-icon="lock_open">lock_open</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="px-lg py-md bg-surface-container-low flex justify-between items-center border-t border-outline-variant">
+<span class="text-body-sm text-on-surface-variant">Hiển thị 1 - 10 trên tổng số 248 người dùng</span>
+<div class="flex items-center gap-xs">
+<button class="p-2 rounded-lg hover:bg-surface-container-high text-outline transition-all disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-primary text-on-primary font-semibold text-body-base">1</button>
+<button class="w-10 h-10 rounded-lg hover:bg-surface-container-high text-on-surface-variant font-semibold text-body-base transition-all">2</button>
+<button class="w-10 h-10 rounded-lg hover:bg-surface-container-high text-on-surface-variant font-semibold text-body-base transition-all">3</button>
+<span class="px-2 text-outline">...</span>
+<button class="w-10 h-10 rounded-lg hover:bg-surface-container-high text-on-surface-variant font-semibold text-body-base transition-all">25</button>
+<button class="p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-all">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Contextual FAB - suppressed on user management per instruction, but technically available if needed for specific actions. Following rule to suppress on Details/Settings screens -->
+</body></html>

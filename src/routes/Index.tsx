@@ -7,6 +7,7 @@ import DashboardPage from '../pages/DashboardPage';
 import SettingPage from '../pages/SettingPage';
 import RolePage from '../pages/Admin/RolePage';
 import GetRolePage from '../pages/Admin/GetRolePage';
+import UserPage from '../pages/Admin/UserPage';
 
 const AppRoutes = () => {
     return (
@@ -33,6 +34,7 @@ const AppRoutes = () => {
                 <Route path="/settings" element={<SettingPage />} />
                 <Route path="/admin/role" element={<RolePage />} />
                 <Route path="/admin/role/:id" element={<GetRolePage />} />
+                <Route path="/admin/user" element={<UserPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />
