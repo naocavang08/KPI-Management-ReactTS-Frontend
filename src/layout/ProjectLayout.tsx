@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
 	Avatar,
 	Box,
 	Chip,
+	Collapse,
 	Divider,
 	IconButton,
 	Menu,
@@ -18,6 +19,7 @@ import {
 import {
 	BarChart3,
 	Bell,
+	ChevronDown,
 	ChevronRight,
 	CircleHelp,
 	FolderKanban,
@@ -28,6 +30,7 @@ import {
 	Shield,
 	Target,
 	User,
+	Users,
 } from "lucide-react";
 import { me } from "../api/auth.api";
 import type { MeResponse } from "../interfaces/auth.types";
@@ -39,17 +42,37 @@ const { colors, elevation, layout, radius, semantic, spacing, typography } = des
 type NavigationItem = {
 	id: string;
 	label: string;
-	icon: typeof LayoutDashboard;
+	icon: any;
 	path?: string;
 	disabled?: boolean;
+	children?: { id: string; label: string; icon?: any; path: string }[];
 };
 
 const navigationItems: NavigationItem[] = [
 	{
-		id: "dashboard",
-		label: "Dashboard",
-		icon: LayoutDashboard,
-		path: "/dashboard",
+		id: "admin",
+		label: "Admin",
+		icon: Users,
+		children: [
+			{
+				id: "dashboard",
+				label: "Dashboard",
+				icon: LayoutDashboard,
+				path: "/dashboard",
+			},
+			{
+				id: "admin-users",
+				label: "User",
+				icon: User,
+				path: "/admin/user"
+			},
+			{
+				id: "admin-roles",
+				label: "Role",
+				icon: Shield,
+				path: "/admin/role"
+			},
+		],
 	},
 	{
 		id: "kpi-library",
@@ -80,6 +103,7 @@ const navigationItems: NavigationItem[] = [
 const drawerWidth = parseInt(layout.sidebarWidth, 10);
 
 const ProjectLayout = () => {
+	const navigate = useNavigate();
 	const theme = useTheme();
 	const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 	const location = useLocation();
@@ -88,9 +112,32 @@ const ProjectLayout = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+	const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => {
+		const initial: Record<string, boolean> = {};
+		navigationItems.forEach((item) => {
+			if (item.children?.some((child) => child.path === location.pathname)) {
+				initial[item.id] = true;
+			}
+		});
+		return initial;
+	});
+
+	const toggleExpand = (id: string, e: React.MouseEvent) => {
+		e.preventDefault();
+		setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+	};
 
 	const activeItem = useMemo(
-		() => navigationItems.find((item) => item.path === location.pathname),
+		() => {
+			for (const item of navigationItems) {
+				if (item.path === location.pathname) return item;
+				if (item.children) {
+					const child = item.children.find(c => c.path === location.pathname);
+					if (child) return child;
+				}
+			}
+			return undefined;
+		},
 		[location.pathname]
 	);
 
@@ -257,48 +304,108 @@ const ProjectLayout = () => {
 							);
 						}
 
+						const isChildActive = item.children?.some(child => child.path === location.pathname);
+						const isItemActive = isActive || isChildActive;
+						const hasChildren = item.children && item.children.length > 0;
+						const isExpanded = expandedItems[item.id];
+
 						return (
-							<Box
-								key={item.id}
-								component={NavLink}
-								to={item.path!}
-								onClick={() => setMobileOpen(false)}
-								sx={{
-									display: "flex",
-									alignItems: "center",
-									gap: spacing.sm,
-									px: spacing.md,
-									py: spacing.sm,
-									textDecoration: "none",
-									borderLeft: `4px solid ${
-										isActive ? colors.primaryContainer : "transparent"
-									}`,
-									borderRadius: `0 ${radius.lg} ${radius.lg} 0`,
-									backgroundColor: isActive
-										? "rgba(0, 82, 204, 0.08)"
-										: "transparent",
-									color: isActive ? colors.primaryContainer : colors.onSurfaceVariant,
-									fontWeight: isActive ? 700 : 500,
-									transition:
-										"background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease",
-									"&:hover": {
-										backgroundColor: isActive
-											? "rgba(0, 82, 204, 0.12)"
-											: colors.surfaceContainerLow,
-									},
-								}}
-							>
-								<Icon size={19} />
-								<Typography
+							<Box key={item.id} sx={{ display: "flex", flexDirection: "column" }}>
+								<Box
+									component={hasChildren ? "div" : NavLink}
+									{...(hasChildren ? {} : { to: item.path! })}
+									onClick={hasChildren ? (e: any) => toggleExpand(item.id, e) : () => setMobileOpen(false)}
 									sx={{
-										fontFamily: typography.bodyBase.fontFamily,
-										fontSize: typography.bodyBase.fontSize,
-										fontWeight: "inherit",
-										lineHeight: typography.bodyBase.lineHeight,
+										display: "flex",
+										alignItems: "center",
+										gap: spacing.sm,
+										px: spacing.md,
+										py: spacing.sm,
+										textDecoration: "none",
+										cursor: "pointer",
+										borderLeft: `4px solid ${isItemActive ? colors.primaryContainer : "transparent"
+											}`,
+										borderRadius: `0 ${radius.lg} ${radius.lg} 0`,
+										backgroundColor: isItemActive
+											? "rgba(0, 82, 204, 0.08)"
+											: "transparent",
+										color: isItemActive ? colors.primaryContainer : colors.onSurfaceVariant,
+										fontWeight: isItemActive ? 700 : 500,
+										transition:
+											"background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease",
+										"&:hover": {
+											backgroundColor: isItemActive
+												? "rgba(0, 82, 204, 0.12)"
+												: colors.surfaceContainerLow,
+										},
 									}}
 								>
-									{item.label}
-								</Typography>
+									<Icon size={19} />
+									<Typography
+										sx={{
+											fontFamily: typography.bodyBase.fontFamily,
+											fontSize: typography.bodyBase.fontSize,
+											fontWeight: "inherit",
+											lineHeight: typography.bodyBase.lineHeight,
+											flexGrow: 1,
+										}}
+									>
+										{item.label}
+									</Typography>
+									{hasChildren && (
+										isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+									)}
+								</Box>
+								{hasChildren && (
+									<Collapse in={isExpanded} timeout="auto" unmountOnExit>
+										<Stack spacing="2px" sx={{ mt: "2px" }}>
+											{item.children!.map((child) => {
+												const isChildCurrent = child.path === location.pathname;
+												const ChildIcon = child.icon;
+												return (
+													<Box
+														key={child.id}
+														component={NavLink}
+														to={child.path}
+														onClick={() => setMobileOpen(false)}
+														sx={{
+															display: "flex",
+															alignItems: "center",
+															gap: spacing.sm,
+															pl: ChildIcon ? "42px" : "48px",
+															pr: spacing.md,
+															py: "8px",
+															textDecoration: "none",
+															borderRadius: `0 ${radius.lg} ${radius.lg} 0`,
+															backgroundColor: isChildCurrent
+																? "rgba(0, 82, 204, 0.08)"
+																: "transparent",
+															color: isChildCurrent ? colors.primaryContainer : colors.onSurfaceVariant,
+															fontWeight: isChildCurrent ? 600 : 400,
+															transition: "background-color 0.2s ease, color 0.2s ease",
+															"&:hover": {
+																backgroundColor: isChildCurrent
+																	? "rgba(0, 82, 204, 0.12)"
+																	: colors.surfaceContainerLow,
+															},
+														}}
+													>
+														{ChildIcon && <ChildIcon size={16} />}
+														<Typography
+															sx={{
+																fontFamily: typography.bodyBase.fontFamily,
+																fontSize: "14px",
+																fontWeight: "inherit",
+															}}
+														>
+															{child.label}
+														</Typography>
+													</Box>
+												);
+											})}
+										</Stack>
+									</Collapse>
+								)}
 							</Box>
 						);
 					})}
@@ -663,7 +770,7 @@ const ProjectLayout = () => {
 					<User size={16} />
 					Profile
 				</MenuItem>
-				<MenuItem onClick={handleMenuClose} sx={{ gap: spacing.sm }}>
+				<MenuItem onClick={() => navigate("/settings")} sx={{ gap: spacing.sm }}>
 					<Settings size={16} />
 					Settings
 				</MenuItem>
