@@ -7,7 +7,7 @@ import { useToastify } from "../../hooks/useToastify";
 import type { LoginRequest } from "../../interfaces/auth.types";
 
 const defaultValues: LoginRequest = {
-    email: "",
+    username: "",
     password: "",
 };
 

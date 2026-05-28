@@ -133,7 +133,7 @@ const LoginPage = () => {
 								<Box>
 									<Typography
 										component="label"
-										htmlFor="email"
+										htmlFor="username"
 										sx={{
 											display: "block",
 											mb: spacing.xs,
@@ -146,22 +146,18 @@ const LoginPage = () => {
 											color: colors.onSurfaceVariant,
 										}}
 									>
-										Email
+										Username
 									</Typography>
 									<TextField
-										id="email"
+										id="username"
 										fullWidth
-										placeholder="name@company.com"
-										type="email"
-										autoComplete="email"
-										error={Boolean(errors.email)}
-										helperText={errors.email?.message}
-										{...register("email", {
-											required: "Email is required",
-											pattern: {
-												value: /\S+@\S+\.\S+/,
-												message: "Enter a valid email",
-											},
+										placeholder="admin"
+										type="text"
+										autoComplete="username"
+										error={Boolean(errors.username)}
+										helperText={errors.username?.message}
+										{...register("username", {
+											required: "Username is required",
 										})}
 										sx={{
 											"& .MuiInputBase-root": {
@@ -220,10 +216,10 @@ const LoginPage = () => {
 										helperText={errors.password?.message}
 										{...register("password", {
 											required: "Password is required",
-											pattern: {
-												value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
-												message: "Password must contain letters and numbers",
-											},
+											// pattern: {
+											// 	value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/,
+											// 	message: "Password must contain letters and numbers",
+											// },
 											minLength: {
 												value: 6,
 												message: "Password must be at least 6 characters",

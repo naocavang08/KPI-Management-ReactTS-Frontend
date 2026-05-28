@@ -32,8 +32,6 @@ import {
 	User,
 	Users,
 } from "lucide-react";
-import { me } from "../api/auth.api";
-import type { MeResponse } from "../interfaces/auth.types";
 import { useAuthStore } from "../stores/auth.store";
 import desginToken from "../theme/desginToken";
 
@@ -107,9 +105,10 @@ const ProjectLayout = () => {
 	const theme = useTheme();
 	const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 	const location = useLocation();
-	const { logout, auth } = useAuthStore();
-	const [userInfo, setUserInfo] = useState<MeResponse["user"] | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const logout = useAuthStore((state) => state.logout);
+	const userInfo = useAuthStore((state) => state.user);
+	const fetchMe = useAuthStore((state) => state.fetchMe);
+	const isLoading = useAuthStore((state) => state.isProfileLoading);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 	const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => {
@@ -143,8 +142,8 @@ const ProjectLayout = () => {
 
 	const userName = useMemo(() => {
 		if (isLoading) return "Loading...";
-		return userInfo?.fullName || "User";
-	}, [isLoading, userInfo?.fullName]);
+		return userInfo?.displayName || "User";
+	}, [isLoading, userInfo?.displayName]);
 
 	const userEmail = useMemo(() => {
 		if (isLoading) return "...";
@@ -153,28 +152,18 @@ const ProjectLayout = () => {
 
 	const userRole = useMemo(() => {
 		if (isLoading) return "Syncing profile";
-		return userInfo?.roleName || "Team member";
-	}, [isLoading, userInfo?.roleName]);
+		return userInfo?.roles?.[0]?.displayName || userInfo?.roles?.[0]?.name || "Team member";
+	}, [isLoading, userInfo?.roles]);
 
 	const currentPageTitle = activeItem?.label || "Workspace";
 
 	useEffect(() => {
-		const fetchData = async () => {
-			if (!auth) return;
-			try {
-				setIsLoading(true);
-				const response = await me();
-				if (response?.user) {
-					setUserInfo(response.user);
-				}
-			} catch (error) {
-				console.error("Failed to fetch user info:", error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-		void fetchData();
-	}, [auth]);
+		if (userInfo) return;
+
+		void fetchMe().catch((error) => {
+			console.error("Failed to fetch user info:", error);
+		});
+	}, [fetchMe, userInfo]);
 
 	useEffect(() => {
 		if (isDesktop) {
@@ -425,7 +414,7 @@ const ProjectLayout = () => {
 				>
 					<Stack direction="row" spacing={spacing.sm} sx={{ alignItems: "center" }}>
 						<Avatar
-							src={userInfo?.avatar}
+							src={userInfo?.avatarUrl ?? undefined}
 							sx={{
 								width: 40,
 								height: 40,
