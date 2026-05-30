@@ -1,90 +1,87 @@
-/**
- * Auth API Types
- * Auto-generated from ApiContractv2/AuthApi.yml
- */
-
-// ============================================
-// Base Response Types
-// ============================================
-
-/**
- * Standard API response wrapper
- * Can wrap successful results or errors
- */
-export interface ApiResponse<T = unknown> {
-    success: boolean;
-    data?: T;
-    error?: ApiError;
-}
-
-/**
- * API Error structure matching ErrorResponse schema
- */
 export interface ApiError {
-    error: string;
-    message: string;
+    error?: string;
+    message?: string;
     field?: string;
+    details?: string;
 }
 
-// ============================================
-// Auth Types - Matching OpenAPI Schema
-// ============================================
+export interface ApiMessageResponse {
+    success: boolean;
+    message: string;
+}
 
-/**
- * Login request body
- */
 export interface LoginRequest {
-    email: string;
+    username: string;
     password: string;
 }
 
-/**
- * Login response - only returns token
- * Client must call /api/auth/me to get user info
- */
 export interface LoginResponse {
     accessToken: string;
+    type?: string;
 }
 
-/**
- * User info returned from /api/auth/me
- */
-export interface UserInfo {
+export type UserType = "INTERNSHIP" | "STAFF" | "COLLABORATOR";
+export type UserStatus = "ACTIVE" | "LOCKED" | "INACTIVE";
+
+export interface AuthRole {
     id: number;
-    fullName: string;
+    name: string;
+    displayName: string;
+    description?: string | null;
+    isSystem?: boolean;
+}
+
+export interface AuthPermission {
+    resource: string;
+    action: string;
+    scope?: string | null;
+}
+
+export interface AuthUser {
+    id: number;
     email: string;
-    avatar?: string;
-    roleId: number;
-    roleName: string;
-    status: string;
-    lockedUntil?: string;
+    username: string;
+    displayName: string;
+    avatarUrl?: string | null;
+    isActive: boolean;
+    position?: string | null;
+    type: UserType;
+    status: UserStatus;
+    lockReason?: string | null;
+    lastLoginAt?: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    lockedUntil?: string | null;
+    isDeleted?: boolean;
+    deletedAt?: string | null;
+    roles: AuthRole[];
 }
 
-/**
- * Permission scope levels
- */
-export type PermissionScope = 'ALL' | 'TEAM' | 'SELF';
-
-export type code = [
-    'VIEW_DASHBOARD',
-    'MANAGE_USERS',
-    'VIEW_REPORTS',
-    'EDIT_SETTINGS',
-    'ACCESS_API'
-]
-
-/**
- * Permission structure
- */
-export interface Permission {
-    code: code[number];
-    scope: PermissionScope;
-}
-
-/**
- * Response from /api/auth/me endpoint
- */
 export interface MeResponse {
-    user: UserInfo;
-    permissions: Permission[];
+    user: AuthUser;
+    permissions: AuthPermission[];
+}
+
+export interface UpdateFullnameRequest {
+    fullname: string;
+}
+
+export interface UpdateAvatarRequest {
+    avatarUrl: string;
+}
+
+export interface ChangePasswordRequest {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+}
+
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordRequest {
+    email: string;
+    otp: string;
+    newPassword: string;
 }

@@ -1,22 +1,22 @@
-import { type JSX } from 'react';
-// import { Navigate } from 'react-router-dom';
-// import { useAuthStore } from '../stores/auth.store';
-
-// type AuthState = ReturnType<typeof useAuthStore.getState>;
+import { useEffect, useState, type JSX } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuthStore } from "../stores/auth.store";
 
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
-    // const isAuthenticated = useAuthStore((state: AuthState) => state.isAuthenticated);
-    // const loadFromStorage = useAuthStore((state: AuthState) => state.loadFromStorage);
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+    const loadFromStorage = useAuthStore((state) => state.loadFromStorage);
+    const [isReady, setIsReady] = useState(false);
 
-    // useEffect(() => {
-    //     if (!isAuthenticated) {
-    //         loadFromStorage();
-    //     }
-    // }, [isAuthenticated, loadFromStorage]);
+    useEffect(() => {
+        loadFromStorage();
+        setIsReady(true);
+    }, [loadFromStorage]);
 
-    // if (isAuthenticated) {
-    //     return <Navigate to="/dashboard" replace />;
-    // }
+    if (!isReady) return null;
+
+    if (isAuthenticated) {
+        return <Navigate to="/dashboard" replace />;
+    }
 
     return children;
 };

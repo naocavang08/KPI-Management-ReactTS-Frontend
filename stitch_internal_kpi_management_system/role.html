@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quản lý vai trò người dùng - KPI Insight</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#003d9b",
+                      "on-tertiary-fixed": "#291800",
+                      "tertiary-fixed": "#ffddb3",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#624000",
+                      "on-surface-variant": "#434654",
+                      "on-primary-fixed-variant": "#0040a2",
+                      "on-background": "#191b23",
+                      "primary-fixed-dim": "#b2c5ff",
+                      "secondary-container": "#82f9be",
+                      "on-error-container": "#93000a",
+                      "surface-container-high": "#e7e7f2",
+                      "surface-container": "#ededf8",
+                      "on-secondary-fixed": "#002113",
+                      "inverse-surface": "#2e3038",
+                      "primary-fixed": "#dae2ff",
+                      "tertiary-container": "#7d5200",
+                      "secondary": "#006c47",
+                      "on-primary": "#ffffff",
+                      "outline": "#737685",
+                      "secondary-fixed-dim": "#65dca4",
+                      "on-secondary-container": "#00734c",
+                      "surface-dim": "#d9d9e4",
+                      "surface-tint": "#0c56d0",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed-variant": "#005235",
+                      "primary-container": "#0052cc",
+                      "outline-variant": "#c3c6d6",
+                      "on-tertiary-container": "#ffca81",
+                      "on-surface": "#191b23",
+                      "tertiary": "#5e3c00",
+                      "surface-container-highest": "#e1e2ec",
+                      "error": "#ba1a1a",
+                      "surface-bright": "#faf8ff",
+                      "surface-variant": "#e1e2ec",
+                      "inverse-primary": "#b2c5ff",
+                      "on-tertiary": "#ffffff",
+                      "surface": "#faf8ff",
+                      "inverse-on-surface": "#f0f0fb",
+                      "secondary-fixed": "#82f9be",
+                      "tertiary-fixed-dim": "#ffb950",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary-fixed": "#001848",
+                      "on-primary-container": "#c4d2ff",
+                      "background": "#faf8ff",
+                      "surface-container-low": "#f3f3fd",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "base": "4px",
+                      "grid_columns": "12",
+                      "md": "16px",
+                      "xs": "8px",
+                      "sm": "12px",
+                      "sidebar_width": "260px",
+                      "grid_gutter": "24px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "label-caps": ["Inter"],
+                      "h1": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-base": ["Inter"],
+                      "h2": ["Inter"],
+                      "display-kpi": ["Inter"]
+              },
+              "fontSize": {
+                      "label-caps": ["11px", {"lineHeight": "16px", "fontWeight": "700"}],
+                      "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "body-base": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-kpi": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex">
+<!-- SideNavBar Component -->
+<aside class="fixed h-screen left-0 top-0 w-64 bg-white border-r border-slate-200 flex flex-col py-4 z-50">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-blue-700 uppercase tracking-tighter">KPI Management</h1>
+<p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enterprise Portal</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-6 py-3 text-slate-600 hover:bg-slate-100 duration-200 transition-all font-sans text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-slate-600 hover:bg-slate-100 duration-200 transition-all font-sans text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="analytics">analytics</span>
+<span>KPI Library</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-slate-600 hover:bg-slate-100 duration-200 transition-all font-sans text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="assessment">assessment</span>
+<span>Reports</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-slate-600 hover:bg-slate-100 duration-200 transition-all font-sans text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="group">group</span>
+<span>Team Performance</span>
+</a>
+<!-- Active State: Settings -->
+<a class="flex items-center gap-3 px-6 py-3 text-blue-700 font-bold border-l-4 border-blue-700 bg-blue-50/50 duration-200 transition-all font-sans text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-6 pt-4 border-t border-slate-100">
+<div class="flex items-center gap-3 py-2">
+<img class="w-8 h-8 rounded-full border border-slate-200 object-cover" data-alt="Professional headshot of a senior executive male in a dark suit with a focused, confident expression. The background is a blurred corporate office setting with soft natural light coming from a large window, conveying a sense of corporate leadership and institutional trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIsIFaBxe6-pI7GETuBTSs5Uut0D-O9A_3XVlyG5ZEsncUcwoo3LYmtNABZHoszeI_aQDfxOdR_8aw7MiSzmX57oICOaELJ1TT3HmlvcLiBxzxti4hw9PYw7EI6ZA2O9SF8t3851nhf78cbwXaUjVAmuAB4kfPFcv5w9M9CQBtyWlE5n_OfAqoGkjFZG-kYWNyVI9LkIEf6C9jA2gpwn3zmDRJ1aFPLHXeRTGSFHLkSDFiEtqflw9dYg8oXt5sQKYrCNY58uxYeg"/>
+<div class="overflow-hidden">
+<p class="text-xs font-bold text-slate-900 truncate">Hồ Viết Anh</p>
+<p class="text-[10px] text-slate-500 truncate">Quản trị hệ thống</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 flex flex-col min-h-screen">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center w-full px-6 py-3 bg-white border-b border-slate-200 sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+<span class="material-symbols-outlined text-lg" data-icon="search">search</span>
+</span>
+<input class="pl-10 pr-4 py-1.5 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary/20 w-64 transition-all outline-none" placeholder="Tìm kiếm vai trò..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-600 hover:bg-slate-50 transition-colors rounded-lg relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-white"></span>
+</button>
+<button class="p-2 text-slate-600 hover:bg-slate-50 transition-colors rounded-lg">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-lg space-y-lg flex-1">
+<!-- Breadcrumbs -->
+<nav class="flex text-body-sm text-slate-500 gap-2 items-center">
+<span>Cấu hình</span>
+<span class="material-symbols-outlined text-xs" data-icon="chevron_right">chevron_right</span>
+<span class="text-primary font-semibold">Vai trò người dùng</span>
+</nav>
+<!-- Page Header -->
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<h2 class="font-h1 text-h1 text-on-background">Quản lý vai trò người dùng</h2>
+<p class="font-body-base text-body-base text-outline">Định nghĩa và phân quyền truy cập cho các nhóm người dùng trong hệ thống KPI.</p>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2.5 rounded-lg flex items-center gap-2 font-semibold text-sm hover:bg-primary-container transition-colors shadow-sm active:opacity-80">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+                    Thêm vai trò
+                </button>
+</div>
+<!-- Bento Layout Content -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Main Table Card -->
+<div class="col-span-12 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+<h3 class="font-semibold text-slate-900 text-sm">Danh sách vai trò (8)</h3>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+                                Lọc
+                            </button>
+<button class="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+                                Xuất file
+                            </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-white border-b border-slate-100">
+<th class="px-6 py-4 text-label-caps font-label-caps text-slate-500 uppercase tracking-wider">Tên vai trò</th>
+<th class="px-6 py-4 text-label-caps font-label-caps text-slate-500 uppercase tracking-wider">Tên hiển thị</th>
+<th class="px-6 py-4 text-label-caps font-label-caps text-slate-500 uppercase tracking-wider">Mô tả</th>
+<th class="px-6 py-4 text-label-caps font-label-caps text-slate-500 uppercase tracking-wider">Vai trò hệ thống</th>
+<th class="px-6 py-4 text-label-caps font-label-caps text-slate-500 uppercase tracking-wider text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-50">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<code class="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">admin</code>
+</td>
+<td class="px-6 py-4 font-semibold text-slate-900 text-sm">Quản trị viên</td>
+<td class="px-6 py-4 text-body-sm text-slate-600 max-w-xs truncate">Toàn quyền truy cập và cấu hình hệ thống, quản lý người dùng.</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-fixed text-on-primary-fixed-variant uppercase">
+                                            Hệ thống
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button class="text-slate-200 cursor-not-allowed">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<code class="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">manager_dept</code>
+</td>
+<td class="px-6 py-4 font-semibold text-slate-900 text-sm">Trưởng bộ phận</td>
+<td class="px-6 py-4 text-body-sm text-slate-600 max-w-xs truncate">Quản lý KPI và hiệu suất của phòng ban cụ thể.</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container uppercase">
+                                            Tùy chỉnh
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button class="text-slate-400 hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<code class="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">employee</code>
+</td>
+<td class="px-6 py-4 font-semibold text-slate-900 text-sm">Nhân viên</td>
+<td class="px-6 py-4 text-body-sm text-slate-600 max-w-xs truncate">Xem KPI cá nhân và nhập liệu báo cáo định kỳ.</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-fixed text-on-primary-fixed-variant uppercase">
+                                            Hệ thống
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button class="text-slate-200 cursor-not-allowed">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<code class="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">viewer</code>
+</td>
+<td class="px-6 py-4 font-semibold text-slate-900 text-sm">Người xem báo cáo</td>
+<td class="px-6 py-4 text-body-sm text-slate-600 max-w-xs truncate">Chỉ có quyền xem các báo cáo tổng hợp, không có quyền chỉnh sửa.</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary-fixed text-on-primary-fixed-variant uppercase">
+                                            Hệ thống
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button class="text-slate-200 cursor-not-allowed">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<code class="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">hr_audit</code>
+</td>
+<td class="px-6 py-4 font-semibold text-slate-900 text-sm">Kiểm soát HR</td>
+<td class="px-6 py-4 text-body-sm text-slate-600 max-w-xs truncate">Kiểm tra tính chính xác của dữ liệu KPI phục vụ đánh giá nhân sự.</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container uppercase">
+                                            Tùy chỉnh
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right space-x-2">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+</button>
+<button class="text-slate-400 hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="delete">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-3 border-t border-slate-100 flex items-center justify-between">
+<span class="text-xs text-slate-500">Hiển thị 5 trên 8 vai trò</span>
+<div class="flex gap-1">
+<button class="p-1 px-3 border border-slate-200 rounded text-xs font-semibold hover:bg-slate-50">Trước</button>
+<button class="p-1 px-3 bg-primary text-white rounded text-xs font-semibold">1</button>
+<button class="p-1 px-3 border border-slate-200 rounded text-xs font-semibold hover:bg-slate-50">2</button>
+<button class="p-1 px-3 border border-slate-200 rounded text-xs font-semibold hover:bg-slate-50">Sau</button>
+</div>
+</div>
+</div>
+<!-- Insight Cards -->
+<div class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Hệ thống</p>
+<h4 class="font-bold text-slate-900">Bảo mật lõi</h4>
+</div>
+</div>
+<p class="text-body-sm text-slate-600 mb-4">Các vai trò hệ thống được bảo vệ nghiêm ngặt để đảm bảo tính ổn định của nền tảng.</p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-50">
+<span class="text-xs font-semibold text-slate-500">Trạng thái:</span>
+<span class="text-xs font-bold text-secondary flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                            Đã tối ưu
+                        </span>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed-dim/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="policy">policy</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Tuân thủ</p>
+<h4 class="font-bold text-slate-900">Phân tách nhiệm vụ</h4>
+</div>
+</div>
+<p class="text-body-sm text-slate-600 mb-4">Đảm bảo không có xung đột lợi ích giữa các vai trò nhập liệu và phê duyệt.</p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-50">
+<span class="text-xs font-semibold text-slate-500">Kiểm tra:</span>
+<span class="text-xs font-bold text-primary">Đạt chuẩn ISO 27001</span>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-primary text-on-primary rounded-xl p-6 shadow-sm overflow-hidden relative">
+<div class="relative z-10">
+<h4 class="font-bold mb-2">Tạo vai trò mới?</h4>
+<p class="text-sm opacity-90 mb-4">Sử dụng quy trình 3 bước để thiết lập quyền truy cập nhanh chóng.</p>
+<button class="bg-white text-primary px-4 py-2 rounded-lg text-xs font-bold hover:bg-opacity-90 transition-all flex items-center gap-2">
+                            Xem tài liệu hướng dẫn
+                            <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Decorative Element -->
+<div class="absolute -bottom-6 -right-6 opacity-10">
+<span class="material-symbols-outlined text-9xl" data-icon="lock_reset" style="font-size: 140px;">lock_reset</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Footer -->
+<footer class="mt-auto px-lg py-md border-t border-slate-200 bg-white">
+<div class="flex justify-between items-center">
+<p class="text-xs text-slate-400">© 2024 KPI Insight. Enterprise Edition v2.4.1</p>
+<div class="flex gap-4">
+<a class="text-xs text-slate-400 hover:text-primary transition-colors" href="#">Điều khoản</a>
+<a class="text-xs text-slate-400 hover:text-primary transition-colors" href="#">Chính sách bảo mật</a>
+</div>
+</div>
+</footer>
+</main>
+<!-- Overlay/Modal Fragment Placeholder (Hidden) -->
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] hidden flex items-center justify-center">
+<div class="bg-white rounded-xl w-full max-w-lg shadow-2xl overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+<h3 class="font-bold text-slate-900">Thêm vai trò người dùng</h3>
+<button class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined" data-icon="close">close</span></button>
+</div>
+<div class="p-6 space-y-4">
+<div class="space-y-1">
+<label class="text-xs font-bold text-slate-700 uppercase">Tên vai trò (ID)</label>
+<input class="w-full border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Ví dụ: manager_finance" type="text"/>
+</div>
+<div class="space-y-1">
+<label class="text-xs font-bold text-slate-700 uppercase">Tên hiển thị</label>
+<input class="w-full border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Ví dụ: Trưởng phòng Tài chính" type="text"/>
+</div>
+<div class="space-y-1">
+<label class="text-xs font-bold text-slate-700 uppercase">Mô tả</label>
+<textarea class="w-full border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary h-24" placeholder="Mô tả chức năng và quyền hạn..."></textarea>
+</div>
+</div>
+<div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+<button class="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Hủy bỏ</button>
+<button class="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg hover:bg-primary-container transition-colors shadow-sm">Lưu thay đổi</button>
+</div>
+</div>
+</div>
+</body></html>
