@@ -1,7 +1,7 @@
 # Tài liệu API - Hệ thống Quản lý KPI (KPI Management System)
-*Cập nhật lúc: 23:59 ngày 27/05/2026*
+*Cập nhật lúc: 21:00 ngày 30/05/2026 (Version 2)*
 
-Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thống Backend (Spring Boot) để phục vụ cho việc lập trình Frontend.
+Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thống Backend (Spring Boot) bao gồm các module Authentication, Users, Roles & Permissions, Task Management, Task Extensions, Task History, KPI Core, KPI Reviews, KPI Appeals, KPI Weights, và KPI Reports (Excel Export).
 
 ---
 
@@ -174,7 +174,6 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ---
 
 ## 👥 2. Nhóm API Quản lý Người dùng (`/users/**`)
-
 *(Các API này yêu cầu Token có quyền **ADMIN**)*
 
 ### 2.1 Lấy danh sách Người dùng (Phân trang & Bộ lọc)
@@ -323,6 +322,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ---
 
 ## 🛡️ 3. Nhóm API Quản lý Role & Permission (`/roles/**`)
+*(Các API này yêu cầu Token có quyền **ADMIN**)*
 
 ### 3.1 Lấy toàn bộ danh sách Role trong hệ thống
 *   **Method**: `GET`
@@ -344,7 +344,25 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     ]
     ```
 
-### 3.2 Tạo mới một Role
+### 3.2 Xem chi tiết một Role (Get Role by ID)
+*   **Method**: `GET`
+*   **URL**: `/roles/{id}`
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": 1,
+      "name": "ADMIN",
+      "displayName": "Administrator",
+      "description": "System Administrator",
+      "isSystem": true,
+      "createdAt": "2026-05-27T14:00:00",
+      "createdBy": null,
+      "updatedAt": "2026-05-27T14:00:00",
+      "updatedBy": null
+    }
+    ```
+
+### 3.3 Tạo mới một Role
 *   **Method**: `POST`
 *   **URL**: `/roles`
 *   **Body (JSON)**:
@@ -358,18 +376,18 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     ```
 *   **Response (201 Created)**: Trả về thông tin Role vừa tạo.
 
-### 3.3 Cập nhật thông tin Role
+### 3.4 Cập nhật thông tin Role
 *   **Method**: `PUT`
 *   **URL**: `/roles/{id}`
 *   **Body (JSON)**: Giống cấu trúc Request Body tạo mới.
 *   **Response (200 OK)**: Trả về thông tin Role sau cập nhật.
 
-### 3.4 Xóa một Role
+### 3.5 Xóa một Role
 *   **Method**: `DELETE`
 *   **URL**: `/roles/{id}`
 *   **Response (204 No Content)**: Trả về thành công, không có body.
 
-### 3.5 Xem danh sách các Permission (quyền) của một Role
+### 3.6 Xem danh sách các Permission (quyền) của một Role
 *   **Method**: `GET`
 *   **URL**: `/roles/{id}/permissions`
 *   **Response (200 OK)**:
@@ -384,7 +402,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     ]
     ```
 
-### 3.6 Gán Permission cho Role
+### 3.7 Gán Permission cho Role
 *   **Method**: `POST`
 *   **URL**: `/roles/{id}/permissions`
 *   **Body (JSON)**:
@@ -395,7 +413,676 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     ```
 *   **Response (201 Created)**: Trả về thành công, không có body.
 
-### 3.7 Gỡ bỏ Permission khỏi Role
+### 3.8 Gỡ bỏ Permission khỏi Role
 *   **Method**: `DELETE`
 *   **URL**: `/roles/{id}/permissions/{permissionId}`
 *   **Response (204 No Content)**: Trả về thành công, không có body.
+
+### 3.9 Lấy toàn bộ danh sách Permission trong hệ thống (Get All Permissions)
+*   **Method**: `GET`
+*   **URL**: `/permissions`
+*   **Response (200 OK)**:
+    ```json
+    [
+      {
+        "id": 1,
+        "resource": "user",
+        "action": "create",
+        "description": "Create user"
+      },
+      {
+        "id": 2,
+        "resource": "task",
+        "action": "update",
+        "description": "Update task"
+      }
+    ]
+    ```
+
+
+---
+
+## 📋 4. Nhóm API Quản lý Task (`/tasks/**`)
+*(Yêu cầu người dùng đã đăng nhập. Các quyền chi tiết được chỉ định dưới từng API)*
+
+### 4.1 Tạo mới Task (Create Task)
+*   **Method**: `POST`
+*   **URL**: `/tasks`
+*   **Quyền hạn**: `MANAGER` (Quản lý trực tiếp phân phối công việc cho nhân viên)
+*   **Body (JSON)**:
+    ```json
+    {
+      "title": "Hoàn thiện thiết kế Database module KPI",
+      "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
+      "assigneeId": 3,
+      "deadline": "2026-06-15T18:00:00",
+      "priority": "HIGH" // LOW, MEDIUM, HIGH
+    }
+    ```
+*   **Response (201 Created)**:
+    ```json
+    {
+      "id": 10,
+      "title": "Hoàn thiện thiết kế Database module KPI",
+      "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
+      "managerId": 2,
+      "managerName": "Manager User",
+      "assigneeId": 3,
+      "assigneeName": "Nguyễn Văn B",
+      "deadline": "2026-06-15T18:00:00",
+      "status": "ASSIGNED", // ASSIGNED, IN_PROGRESS, PENDING_REVIEW, COMPLETED, OVERDUE
+      "priority": "HIGH",
+      "progress": 0,
+      "tags": null,
+      "evidence": null,
+      "createdAt": "2026-05-30T10:00:00",
+      "updatedAt": "2026-05-30T10:00:00"
+    }
+    ```
+
+### 4.2 Xem chi tiết một Task (Get Task by ID)
+*   **Method**: `GET`
+*   **URL**: `/tasks/{id}`
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": 10,
+      "title": "Hoàn thiện thiết kế Database module KPI",
+      "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
+      "managerId": 2,
+      "managerName": "Manager User",
+      "assigneeId": 3,
+      "assigneeName": "Nguyễn Văn B",
+      "deadline": "2026-06-15T18:00:00",
+      "status": "IN_PROGRESS",
+      "priority": "HIGH",
+      "progress": 30,
+      "tags": ["Database", "KPI"],
+      "evidence": null,
+      "createdAt": "2026-05-30T10:00:00",
+      "updatedAt": "2026-05-30T11:30:00"
+    }
+    ```
+
+### 4.3 Lấy danh sách Task (Phân trang & Bộ lọc)
+*   **Method**: `GET`
+*   **URL**: `/tasks`
+*   **Query Parameters (Tùy chọn)**:
+    *   `page`: Số trang, mặc định là `1`
+    *   `limit`: Số bản ghi mỗi trang, mặc định là `20`
+    *   `search`: Tìm kiếm theo tiêu đề hoặc mô tả Task
+    *   `status`: Lọc theo trạng thái (`ASSIGNED`, `IN_PROGRESS`, `PENDING_REVIEW`, `COMPLETED`, `OVERDUE`)
+    *   `priority`: Lọc theo độ ưu tiên (`LOW`, `MEDIUM`, `HIGH`)
+    *   `assigneeId`: Lọc theo ID nhân viên được giao việc
+    *   `teamId`: Lọc theo mã phòng ban/team
+*   **Response (200 OK)**:
+    ```json
+    {
+      "data": [
+        {
+          "id": 10,
+          "title": "Hoàn thiện thiết kế Database module KPI",
+          "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
+          "managerId": 2,
+          "managerName": "Manager User",
+          "assigneeId": 3,
+          "assigneeName": "Nguyễn Văn B",
+          "deadline": "2026-06-15T18:00:00",
+          "status": "IN_PROGRESS",
+          "priority": "HIGH",
+          "progress": 30,
+          "tags": ["Database", "KPI"],
+          "evidence": null,
+          "createdAt": "2026-05-30T10:00:00",
+          "updatedAt": "2026-05-30T11:30:00"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "totalElements": 1,
+        "totalPages": 1
+      }
+    }
+    ```
+
+### 4.4 Chấp nhận hoàn thành Task (Complete Task)
+*   **Method**: `PATCH`
+*   **URL**: `/tasks/{id}/complete`
+*   **Quyền hạn**: `MANAGER` (Quản lý duyệt hoàn thành công việc của nhân viên)
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task completed successfully"
+    }
+    ```
+
+### 4.5 Từ chối hoàn thành Task (Reject Task)
+*   **Method**: `PATCH`
+*   **URL**: `/tasks/{id}/reject`
+*   **Quyền hạn**: `MANAGER`
+*   **Body (JSON)**:
+    ```json
+    {
+      "note": "Kết quả chạy thử vẫn bị lỗi trùng lặp dữ liệu, vui lòng kiểm tra lại."
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task rejected successfully"
+    }
+    ```
+
+### 4.6 Cập nhật thông tin Task (Update Task)
+*   **Method**: `PUT`
+*   **URL**: `/tasks/{id}`
+*   **Quyền hạn**: Authority `TASK:UPDATE` hoặc role `ADMIN`
+*   **Body (JSON)** (Các trường đều là tùy chọn):
+    ```json
+    {
+      "title": "Thiết kế Database module KPI nâng cao",
+      "description": "Bổ sung trường rating và tính toán điểm tổng hợp.",
+      "assigneeId": 3,
+      "deadline": "2026-06-20T18:00:00",
+      "priority": "HIGH",
+      "tags": ["Database", "KPI", "Optimization"]
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": 10,
+      "title": "Thiết kế Database module KPI nâng cao",
+      "description": "Bổ sung trường rating và tính toán điểm tổng hợp.",
+      "managerId": 2,
+      "managerName": "Manager User",
+      "assigneeId": 3,
+      "assigneeName": "Nguyễn Văn B",
+      "deadline": "2026-06-20T18:00:00",
+      "status": "IN_PROGRESS",
+      "priority": "HIGH",
+      "progress": 30,
+      "tags": ["Database", "KPI", "Optimization"],
+      "evidence": null,
+      "createdAt": "2026-05-30T10:00:00",
+      "updatedAt": "2026-05-30T12:00:00"
+    }
+    ```
+
+### 4.7 Xóa Task (Delete Task)
+*   **Method**: `DELETE`
+*   **URL**: `/tasks/{id}`
+*   **Quyền hạn**: Authority `KPI/TASK:DELETE` hoặc role `ADMIN`
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task deleted successfully"
+    }
+    ```
+
+### 4.8 Lấy thống kê/tổng hợp trạng thái Task (Task Summary)
+*   **Method**: `GET`
+*   **URL**: `/tasks/summary`
+*   **Mô tả**: Trả về thống kê số lượng các Task của người dùng hiện tại theo các trạng thái khác nhau.
+*   **Response (200 OK)**:
+    ```json
+    {
+      "ASSIGNED": 3,
+      "IN_PROGRESS": 5,
+      "PENDING_REVIEW": 2,
+      "COMPLETED": 12,
+      "OVERDUE": 1
+    }
+    ```
+
+### 4.9 Cập nhật tiến độ & trạng thái Task (Update Task Progress)
+*   **Method**: `PATCH`
+*   **URL**: `/tasks/{id}/progress`
+*   **Quyền hạn**: Authority `KPI/TASK:UPDATE_PROGRESS` hoặc role `ADMIN` (Thường dành cho nhân viên tự cập nhật tiến độ công việc của mình)
+*   **Body (JSON)**:
+    ```json
+    {
+      "status": "IN_PROGRESS", // ASSIGNED, IN_PROGRESS, PENDING_REVIEW, COMPLETED, OVERDUE
+      "progress": 75 // Điểm phần trăm từ 0 đến 100
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": 10,
+      "title": "Thiết kế Database module KPI nâng cao",
+      "description": "Bổ sung trường rating và tính toán điểm tổng hợp.",
+      "managerId": 2,
+      "managerName": "Manager User",
+      "assigneeId": 3,
+      "assigneeName": "Nguyễn Văn B",
+      "deadline": "2026-06-20T18:00:00",
+      "status": "IN_PROGRESS",
+      "priority": "HIGH",
+      "progress": 75,
+      "tags": ["Database", "KPI", "Optimization"],
+      "evidence": null,
+      "createdAt": "2026-05-30T10:00:00",
+      "updatedAt": "2026-05-30T13:00:00"
+    }
+    ```
+
+### 4.10 Nộp báo cáo hoàn thành Task (Submit Task)
+*   **Method**: `POST`
+*   **URL**: `/tasks/{id}/submit`
+*   **Quyền hạn**: Authority `KPI/TASK:SUBMIT` hoặc role `ADMIN` (Dành cho nhân viên báo cáo đã xong việc và gửi minh chứng)
+*   **Body (JSON)** (Tùy chọn):
+    ```json
+    {
+      "evidence": "https://github.com/hvduong/kpi-repo/pull/12" // Link báo cáo hoặc link PR, Drive
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task submitted successfully"
+    }
+    ```
+
+---
+
+## ⏳ 5. Nhóm API Gia hạn Task (`/tasks/{id}/extension/**`)
+
+### 5.1 Gửi yêu cầu gia hạn Task (Request Task Extension)
+*   **Method**: `POST`
+*   **URL**: `/tasks/{id}/extension`
+*   **Quyền hạn**: Authority `KPI/TASK:EXTEND` hoặc role `ADMIN` (Nhân viên xin gia hạn deadline của Task)
+*   **Body (JSON)**:
+    ```json
+    {
+      "requestedDeadline": "2026-06-25T18:00:00",
+      "reason": "Phát sinh thêm yêu cầu bảo mật nên cần thời gian tối ưu hóa code."
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task extension requested successfully"
+    }
+    ```
+
+### 5.2 Phê duyệt/Bác bỏ yêu cầu gia hạn (Approve/Reject Task Extension)
+*   **Method**: `PATCH`
+*   **URL**: `/tasks/{id}/extension/approve`
+*   **Quyền hạn**: Authority `KPI/TASK:APPROVE_EXTENSION` hoặc role `ADMIN` (Quản lý duyệt/bác bỏ yêu cầu xin gia hạn của nhân viên)
+*   **Body (JSON)**:
+    ```json
+    {
+      "approved": true, // true để chấp nhận đổi deadline, false để bác bỏ
+      "managerNote": "Đồng ý gia hạn thêm 5 ngày để hoàn thiện kiểm thử."
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task extension processed successfully"
+    }
+    ```
+
+---
+
+## 📜 6. Nhóm API Lịch sử Thay đổi Task (`/tasks/{id}/history`)
+
+### 6.1 Xem lịch sử thay đổi của Task (Get Task History)
+*   **Method**: `GET`
+*   **URL**: `/tasks/{id}/history`
+*   **Mô tả**: Trả về toàn bộ nhật ký thay đổi trạng thái, tiến độ và ghi chú tương ứng của một Task.
+*   **Response (200 OK)**:
+    ```json
+    [
+      {
+        "status": "IN_PROGRESS",
+        "progress": 75,
+        "changedByName": "Nguyễn Văn B",
+        "note": "Cập nhật tiến độ lên 75%",
+        "createdAt": "2026-05-30T13:00:00"
+      },
+      {
+        "status": "PENDING_REVIEW",
+        "progress": 100,
+        "changedByName": "Nguyễn Văn B",
+        "note": "Nộp báo cáo hoàn thành công việc. Minh chứng: https://github.com/hvduong/kpi-repo/pull/12",
+        "createdAt": "2026-05-30T14:30:00"
+      }
+    ]
+    ```
+
+---
+
+## 📊 7. Nhóm API Điểm số KPI (`/kpi/**`)
+
+### 7.1 Lấy thông tin điểm KPI cá nhân (Get User KPI)
+*   **Method**: `GET`
+*   **URL**: `/kpi/user/{userId}`
+*   **Quyền hạn**:
+    *   `ADMIN`: Xem được điểm KPI của bất kỳ nhân viên nào.
+    *   `MANAGER`: Xem được điểm KPI của chính mình và của các Staff thuộc phòng ban mình quản lý.
+    *   `STAFF`: Chỉ được phép xem điểm KPI của chính bản thân mình (yêu cầu `userId` trùng với ID của tài khoản đang đăng nhập).
+*   **Query Parameters (Tùy chọn)**:
+    *   `year`: Năm cần lấy điểm số, mặc định là năm hiện tại.
+*   **Response (200 OK)**:
+    ```json
+    {
+      "userId": 3,
+      "username": "nguyenvanb",
+      "displayName": "Nguyễn Văn B",
+      "department": "Tech",
+      "year": 2026,
+      "monthlyScores": [
+        {
+          "id": 1,
+          "userId": 3,
+          "month": 5,
+          "year": 2026,
+          "taskCompletionRate": 0.85, // Tỷ lệ hoàn thành công việc (85%)
+          "reviewScore": 8.0, // Điểm đánh giá từ Manager
+          "finalScore": 8.3, // Điểm tổng hợp (Công thức: taskRate * 10 * W1 + reviewScore * W2)
+          "rating": "EXCELLENT", // Phân loại xếp hạng
+          "createdAt": "2026-05-30T01:00:00",
+          "updatedAt": "2026-05-30T21:00:00"
+        }
+      ]
+    }
+    ```
+
+### 7.2 Lấy thông tin điểm KPI của phòng ban (Get Team KPI)
+*   **Method**: `GET`
+*   **URL**: `/kpi/team/{teamId}`
+*   **Quyền hạn**:
+    *   `ADMIN`: Xem được bất kỳ Team nào.
+    *   `MANAGER`: Chỉ xem được KPI của Team mà mình trực tiếp quản lý.
+*   **Query Parameters (Tùy chọn)**:
+    *   `month`: Tháng cần lấy điểm (1 - 12)
+    *   `year`: Năm cần lấy điểm
+*   **Response (200 OK)**:
+    ```json
+    {
+      "teamId": "Tech",
+      "averageScore": 7.95, // Điểm KPI trung bình của toàn bộ thành viên trong Team
+      "members": [
+        {
+          "userId": 3,
+          "username": "nguyenvanb",
+          "displayName": "Nguyễn Văn B",
+          "taskCompletionRate": 0.85,
+          "reviewScore": 8.0,
+          "finalScore": 8.3,
+          "rating": "EXCELLENT"
+        },
+        {
+          "userId": 4,
+          "username": "tranvanc",
+          "displayName": "Trần Văn C",
+          "taskCompletionRate": 0.70,
+          "reviewScore": 8.0,
+          "finalScore": 7.6,
+          "rating": "GOOD"
+        }
+      ]
+    }
+    ```
+
+---
+
+## ✍️ 8. Nhóm API Đánh giá KPI Review (`/kpi/reviews/**`)
+
+### 8.1 Tạo mới đánh giá KPI hàng tháng (Create KPI Review)
+*   **Method**: `POST`
+*   **URL**: `/kpi/reviews`
+*   **Quyền hạn**: `MANAGER` (Dành cho Quản lý chấm điểm hiệu suất làm việc hàng tháng của nhân viên)
+*   **Ràng buộc**:
+    *   `reviewScore` bắt buộc nằm trong khoảng từ `1.0` đến `10.0`.
+    *   Tự động tính toán lại điểm KPI tổng hợp của nhân viên ngay lập tức sau khi chấm điểm.
+*   **Body (JSON)**:
+    ```json
+    {
+      "userId": 3,
+      "month": 5,
+      "year": 2026,
+      "reviewScore": 8.5,
+      "feedback": "Làm việc có tinh thần trách nhiệm cao, hoàn thành tốt các task Database."
+    }
+    ```
+*   **Response (201 Created)**:
+    ```json
+    {
+      "id": 5,
+      "userId": 3,
+      "reviewerId": 2,
+      "month": 5,
+      "year": 2026,
+      "reviewScore": 8.5,
+      "feedback": "Làm việc có tinh thần trách nhiệm cao, hoàn thành tốt các task Database.",
+      "isLocked": false,
+      "createdAt": "2026-05-30T21:00:00",
+      "updatedAt": "2026-05-30T21:00:00"
+    }
+    ```
+
+### 8.2 Cập nhật đánh giá KPI (Update KPI Review)
+*   **Method**: `PUT`
+*   **URL**: `/kpi/reviews/{id}`
+*   **Quyền hạn**: `MANAGER` (Cho phép sửa điểm hoặc nhận xét nếu quản lý nhập nhầm)
+*   **Ràng buộc**:
+    *   Không cho phép cập nhật nếu bản ghi đánh giá đã bị khóa (ví dụ: đã quá thời gian phúc khảo hoặc đã chốt).
+    *   Tự động tính toán lại điểm KPI tổng hợp của nhân viên ngay lập tức sau khi cập nhật.
+*   **Body (JSON)**:
+    ```json
+    {
+      "reviewScore": 9.0,
+      "feedback": "Đã xem xét thêm nỗ lực hỗ trợ các thành viên khác, nâng điểm lên 9.0."
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": 5,
+      "userId": 3,
+      "reviewerId": 2,
+      "month": 5,
+      "year": 2026,
+      "reviewScore": 9.0,
+      "feedback": "Đã xem xét thêm nỗ lực hỗ trợ các thành viên khác, nâng điểm lên 9.0.",
+      "isLocked": false,
+      "createdAt": "2026-05-30T21:00:00",
+      "updatedAt": "2026-05-30T21:05:00"
+    }
+    ```
+
+### 8.3 Xóa đánh giá KPI (Delete KPI Review)
+*   **Method**: `DELETE`
+*   **URL**: `/kpi/reviews/{id}`
+*   **Quyền hạn**: `MANAGER` (Hủy bản ghi đánh giá lỗi)
+*   **Ràng buộc**:
+    *   Tự động recalculate lại điểm tổng hợp của nhân viên về trạng thái không có điểm review (reviewScore = 0.0) ngay lập tức.
+*   **Response (204 No Content)**: Trả về thành công và không có body.
+
+### 8.4 Lấy lịch sử đánh giá 12 tháng gần nhất (Get KPI Review History)
+*   **Method**: `GET`
+*   **URL**: `/kpi/reviews/history/{userId}`
+*   **Mô tả**: Xem lịch sử nhận xét đánh giá 12 tháng gần nhất của một nhân viên.
+*   **Response (200 OK)**:
+    ```json
+    [
+      {
+        "id": 5,
+        "userId": 3,
+        "reviewerId": 2,
+        "month": 5,
+        "year": 2026,
+        "reviewScore": 9.0,
+        "feedback": "Đã xem xét thêm nỗ lực hỗ trợ các thành viên khác, nâng điểm lên 9.0.",
+        "isLocked": false,
+        "createdAt": "2026-05-30T21:00:00",
+        "updatedAt": "2026-05-30T21:05:00"
+      }
+    ]
+    ```
+
+---
+
+## ⚖️ 9. Nhóm API Khiếu nại KPI Appeal (`/kpi/appeals/**`)
+
+### 9.1 Gửi đơn khiếu nại (Create KPI Appeal)
+*   **Method**: `POST`
+*   **URL**: `/kpi/appeals`
+*   **Quyền hạn**: `STAFF` (Nhân viên gửi đơn khiếu nại nếu nhận thấy điểm Review chưa thỏa đáng)
+*   **Body (JSON)**:
+    ```json
+    {
+      "kpiReviewId": 5,
+      "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
+      "evidenceLink": "https://drive.google.com/file/d/evidence-link"
+    }
+    ```
+*   **Response (201 Created)**:
+    ```json
+    {
+      "id": 1,
+      "userId": 3,
+      "complainantUsername": "nguyenvanb",
+      "complainantDisplayName": "Nguyễn Văn B",
+      "kpiReviewId": 5,
+      "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
+      "evidenceLink": "https://drive.google.com/file/d/evidence-link",
+      "status": "PENDING", // PENDING, APPROVED, REJECTED
+      "resolvedBy": null,
+      "resolutionComment": null,
+      "createdAt": "2026-05-30T21:10:00",
+      "updatedAt": "2026-05-30T21:10:00"
+    }
+    ```
+
+### 9.2 Xem danh sách các đơn khiếu nại đang chờ xử lý (Get Pending KPI Appeals)
+*   **Method**: `GET`
+*   **URL**: `/kpi/appeals/team`
+*   **Quyền hạn**: `MANAGER` (Xem danh sách đơn đang chờ duyệt của team mình quản lý), `ADMIN` (Xem tất cả các đơn pending trong hệ thống)
+*   **Response (200 OK)**:
+    ```json
+    [
+      {
+        "id": 1,
+        "userId": 3,
+        "complainantUsername": "nguyenvanb",
+        "complainantDisplayName": "Nguyễn Văn B",
+        "kpiReviewId": 5,
+        "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
+        "evidenceLink": "https://drive.google.com/file/d/evidence-link",
+        "status": "PENDING",
+        "resolvedBy": null,
+        "resolutionComment": null,
+        "createdAt": "2026-05-30T21:10:00",
+        "updatedAt": "2026-05-30T21:10:00"
+      }
+    ]
+    ```
+
+### 9.3 Xử lý đơn khiếu nại (Resolve KPI Appeal)
+*   **Method**: `PATCH`
+*   **URL**: `/kpi/appeals/{id}/resolve`
+*   **Quyền hạn**: `MANAGER` hoặc `ADMIN` (Đưa ra quyết định giải quyết khiếu nại)
+*   **Lưu ý**:
+    *   Nếu chọn trạng thái là `APPROVED` (chấp nhận phúc khảo), hệ thống sẽ cập nhật trạng thái đơn và đồng thời cập nhật lại điểm tại module Review (kèm theo việc tự động tính toán lại điểm tổng hợp của nhân viên).
+    *   Nếu chọn trạng thái là `REJECTED`, đơn khiếu nại sẽ bị bác bỏ.
+*   **Body (JSON)**:
+    ```json
+    {
+      "status": "APPROVED", // APPROVED hoặc REJECTED
+      "resolutionComment": "Đồng ý hỗ trợ cập nhật lại điểm sau khi đối chiếu minh chứng."
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": 1,
+      "userId": 3,
+      "complainantUsername": "nguyenvanb",
+      "complainantDisplayName": "Nguyễn Văn B",
+      "kpiReviewId": 5,
+      "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
+      "evidenceLink": "https://drive.google.com/file/d/evidence-link",
+      "status": "APPROVED",
+      "resolvedBy": 2,
+      "resolutionComment": "Đồng ý hỗ trợ cập nhật lại điểm sau khi đối chiếu minh chứng.",
+      "createdAt": "2026-05-30T21:10:00",
+      "updatedAt": "2026-05-30T21:20:00"
+    }
+    ```
+
+---
+
+## ⚙️ 10. Nhóm API Cấu hình Trọng số KPI (`/kpi/weights/**`)
+
+### 10.1 Lấy thông tin cấu hình trọng số hiện tại (Get KPI Weights)
+*   **Method**: `GET`
+*   **URL**: `/kpi/weights`
+*   **Mô tả**: Trả về trọng số tính điểm KPI hiện tại của hệ thống cho tỷ trọng hoàn thành công việc (`taskWeight` - $W_1$) và điểm đánh giá hiệu suất của quản lý (`reviewWeight` - $W_2$). Mặc định ban đầu là `0.6` và `0.4`.
+*   **Response (200 OK)**:
+    ```json
+    {
+      "taskWeight": 0.6,
+      "reviewWeight": 0.4
+    }
+    ```
+
+### 10.2 Cập nhật giá trị trọng số mới (Update KPI Weights)
+*   **Method**: `PUT`
+*   **URL**: `/kpi/weights`
+*   **Quyền hạn**: Chỉ dành riêng cho quyền **ADMIN**
+*   **Ràng buộc**:
+    *   Cả hai trường trọng số bắt buộc nằm trong khoảng từ `0.0` đến `1.0`.
+    *   Tổng giá trị của `taskWeight` + `reviewWeight` truyền lên phải luôn bằng đúng `1.0`.
+*   **Body (JSON)**:
+    ```json
+    {
+      "taskWeight": 0.5,
+      "reviewWeight": 0.5
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "KPI weights updated successfully"
+    }
+    ```
+
+---
+
+## 📥 11. Nhóm API Xuất báo cáo KPI ra Excel (`/kpi/export`)
+
+### 11.1 Xuất dữ liệu bảng điểm KPI tổng hợp ra file Excel (Export KPI Report)
+*   **Method**: `GET`
+*   **URL**: `/kpi/export`
+*   **Quyền hạn**: Chỉ có **ADMIN** hoặc tài khoản **MANAGER** thuộc phòng ban nhân sự (ví dụ: `department = 'HR'`) mới được phép gọi API này.
+*   **Query Parameters (Bắt buộc)**:
+    *   `month`: Tháng xuất báo cáo (1 - 12)
+    *   `year`: Năm xuất báo cáo (2020 - 2100)
+    *   `department` (Tùy chọn): Lọc xuất báo cáo riêng cho một phòng ban cụ thể. Nếu không truyền sẽ xuất báo cáo của toàn bộ công ty.
+*   **Response (200 OK)**: File Excel binary (Content-Type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`). Tên tệp tin tải về có định dạng động: `Bao_cao_KPI_Thang_<month>_Nam_<year>.xlsx`.
+*   **Định dạng file Excel xuất ra**:
+    *   Header nổi bật với màu nền xanh (Blue Fill), chữ đậm màu trắng.
+    *   Tự động căn chỉnh độ rộng cột phù hợp với dữ liệu.
+    *   Các cột thông tin bao gồm: STT, Mã nhân viên (ID), Họ và Tên, Phòng ban, Tỷ lệ hoàn thành Task (%), Điểm đánh giá Review, Điểm KPI tổng hợp, Xếp loại KPI.
+
+---
+
+## 🕒 12. Tiến trình tự động hóa chạy ngầm (Background Worker Scheduler)
+*Hệ thống tích hợp tác vụ chạy tự động định kỳ bằng Spring Scheduler:*
+*   **Thời gian kích hoạt**: Chạy ngầm vào lúc **01:00 AM ngày mùng 1 hàng tháng** (Cron Expression: `0 0 1 1 * ?`).
+*   **Logic nghiệp vụ tự động hóa**:
+    1. Quét danh sách toàn bộ người dùng đang ở trạng thái hoạt động trong hệ thống.
+    2. Đếm số lượng task được giao và tỷ lệ hoàn thành (tỷ lệ phần trăm task COMPLETED so với tổng số task giao có deadline thuộc tháng cũ) của từng nhân viên.
+    3. Tự động tính toán điểm số KPI tổng hợp tháng cũ và khởi tạo bản ghi điểm số KPI mới cho tháng hiện tại với các giá trị mặc định ban đầu.
