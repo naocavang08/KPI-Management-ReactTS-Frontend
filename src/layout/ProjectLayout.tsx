@@ -85,10 +85,10 @@ const navigationItems: NavigationItem[] = [
 		disabled: true,
 	},
 	{
-		id: "team-performance",
-		label: "Team Performance",
+		id: "tasks",
+		label: "Task Management",
 		icon: FolderKanban,
-		disabled: true,
+		path: "/tasks",
 	},
 	{
 		id: "settings",
