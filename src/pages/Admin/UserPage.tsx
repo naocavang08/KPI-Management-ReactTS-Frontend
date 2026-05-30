@@ -47,7 +47,6 @@ import {
     assignUserRole,
     createUser,
     deleteUser,
-    getRoles,
     getUserById,
     getUserRoles,
     getUsers,
@@ -56,6 +55,7 @@ import {
     unlockUser,
     updateUser,
 } from "../../api/user.api";
+import { getRoles } from "../../api/role.api";
 import { useToastify } from "../../hooks/useToastify";
 import type { AuthRole, UserStatus, UserType } from "../../interfaces/auth.types";
 import type { CreateUserRequest, ManagedUser, UpdateUserRequest, UserPagination } from "../../interfaces/user.types";
