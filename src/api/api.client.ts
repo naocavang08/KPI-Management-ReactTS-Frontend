@@ -7,6 +7,7 @@ const baseURL = axios.create({
     timeout: 20000,
     headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
     },
     paramsSerializer: (params) => queryString.stringify(params),
 });
@@ -29,10 +30,14 @@ baseURL.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            removeTokenAccess();
-
-            window.location.href = "/login";
-            return;
+            const requestUrl = error.config?.url || '';
+            // Only redirect and clear tokens if the request is NOT the login request itself
+            if (!requestUrl.includes('/auth/login')) {
+                removeTokenAccess();
+                if (!window.location.pathname.includes('/login')) {
+                    window.location.href = "/login";
+                }
+            }
         }
         return Promise.reject(error);
     }
