@@ -10,6 +10,8 @@ import GetRolePage from '../pages/Admin/GetRolePage';
 import UserPage from '../pages/Admin/UserPage';
 import TaskPage from '../pages/Task/TaskPage';
 import TaskDetailPage from '../pages/Task/TaskDetailPage';
+import KpiScorePage from '../pages/Kpi/KpiScorePage';
+import KpiReviewPage from '../pages/Kpi/KpiReviewPage';
 
 const AppRoutes = () => {
     return (
@@ -39,6 +41,8 @@ const AppRoutes = () => {
                 <Route path="/admin/user" element={<UserPage />} />
                 <Route path="/tasks" element={<TaskPage />} />
                 <Route path="/tasks/:id" element={<TaskDetailPage />} />
+                <Route path="/kpi/scores" element={<KpiScorePage />} />
+                <Route path="/kpi/reviews" element={<KpiReviewPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />
