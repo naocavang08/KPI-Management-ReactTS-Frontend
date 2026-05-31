@@ -1,5 +1,5 @@
 # Tài liệu API - Hệ thống Quản lý KPI (KPI Management System)
-*Cập nhật lúc: 15:15 ngày 31/05/2026 (Version 4)*
+*Cập nhật lúc: 15:40 ngày 31/05/2026 (Version 5)*
 
 Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thống Backend (Spring Boot) bao gồm các module Authentication, Users, Roles & Permissions, Task Management, Task Extensions, Task History, KPI Core, KPI Reviews, KPI Appeals, KPI Weights, KPI Reports (Excel Export), và Team Management.
 
@@ -1246,6 +1246,72 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     }
     ```
 
+### 9.4 Tự xem danh sách đơn khiếu nại của bản thân (Get My KPI Appeals)
+*   **Method**: `GET`
+*   **URL**: `/kpi/appeals/me`
+*   **Quyền hạn**: Authority `KPI/APPEAL:CREATE` hoặc role `ADMIN`
+*   **Query Parameters (Tùy chọn)**:
+    *   `status`: Lọc theo trạng thái của đơn khiếu nại (`PENDING`, `APPROVED`, `REJECTED`)
+*   **Response (200 OK)**:
+    ```json
+    [
+      {
+        "id": 1,
+        "userId": 3,
+        "complainantUsername": "staff",
+        "complainantDisplayName": "IT Staff",
+        "kpiReviewId": 5,
+        "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
+        "evidenceLink": "https://drive.google.com/file/d/evidence-link",
+        "status": "PENDING",
+        "resolvedBy": null,
+        "resolutionComment": null,
+        "createdAt": "2026-05-30T21:10:00",
+        "updatedAt": "2026-05-30T21:10:00"
+      }
+    ]
+    ```
+
+### 9.5 Xem lịch sử các đơn khiếu nại đã giải quyết (Get KPI Appeal History)
+*   **Method**: `GET`
+*   **URL**: `/kpi/appeals/history`
+*   **Quyền hạn**: Authority `KPI/APPEAL:RESOLVE` hoặc role `ADMIN`
+*   **Mô tả**: MANAGER chỉ xem lịch sử đơn khiếu nại của các thành viên thuộc Team do chính họ quản lý, ADMIN xem toàn bộ lịch sử khiếu nại trong toàn công ty.
+*   **Query Parameters (Tùy chọn)**:
+    *   `page`: Số trang (mặc định = 1)
+    *   `limit`: Số bản ghi mỗi trang (mặc định = 20)
+    *   `status`: Lọc theo trạng thái đơn khiếu nại. Mặc định là lọc các đơn `APPROVED` hoặc `REJECTED`. Nếu truyền chuỗi rỗng `""` hoặc `"ALL"`, hệ thống sẽ cho phép xem cả các đơn ở trạng thái `PENDING`.
+    *   `teamId`: Lọc theo ID của Team (Chỉ hoạt động đối với ADMIN để xem theo từng phòng ban; đối với MANAGER, hệ thống tự động ràng buộc theo Team của họ và trả về lỗi `403 Forbidden` nếu họ cố gắng truyền `teamId` khác).
+*   **Response (200 OK)**:
+    ```json
+    {
+      "data": [
+        {
+          "id": 1,
+          "userId": 3,
+          "complainantUsername": "staff",
+          "complainantDisplayName": "IT Staff",
+          "kpiReviewId": 5,
+          "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
+          "evidenceLink": "https://drive.google.com/file/d/evidence-link",
+          "status": "APPROVED",
+          "resolvedBy": 2,
+          "resolverUsername": "manager",
+          "resolverDisplayName": "IT Manager",
+          "resolutionComment": "Đồng ý hỗ trợ cập nhật lại điểm sau khi đối chiếu minh chứng.",
+          "createdAt": "2026-05-30T21:10:00",
+          "updatedAt": "2026-05-30T21:20:00"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "totalElements": 1,
+        "totalPages": 1
+      }
+    }
+    ```
+
 ---
 
 ## ⚙️ 10. Nhóm API Cấu hình Trọng số KPI (`/kpi/weights/**`)
@@ -1378,7 +1444,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `GET`
 *   **URL**: `/teams/{id}`
 *   **Quyền hạn**: Authority `TEAM:VIEW` hoặc vai trò `ADMIN`
-*   **Response (200 OK)** (Trả về chi tiết phòng ban cùng danh sách thành viên):
+*   **Response (200 OK)** (Trả về chi tiết phòng ban):
     ```json
     {
       "id": 1,
@@ -1389,31 +1455,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "managerName": "IT Manager",
       "isDeleted": false,
       "createdAt": "2026-05-31T09:00:00",
-      "updatedAt": "2026-05-31T09:00:00",
-      "members": [
-        {
-          "id": 2,
-          "email": "manager@gmail.com",
-          "username": "manager",
-          "displayName": "IT Manager",
-          "avatarUrl": null,
-          "isActive": true,
-          "position": "Manager",
-          "type": "STAFF",
-          "status": "ACTIVE",
-          "lockReason": null,
-          "department": "IT",
-          "managerId": null,
-          "teamId": 1,
-          "lastLoginAt": null,
-          "createdAt": "2026-05-27T14:00:00",
-          "updatedAt": "2026-05-27T14:00:00",
-          "lockedUntil": null,
-          "isDeleted": false,
-          "deletedAt": null,
-          "roles": []
-        }
-      ]
+      "updatedAt": "2026-05-31T09:00:00"
     }
     ```
 
@@ -1484,6 +1526,50 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     {
       "success": true,
       "message": "User successfully removed from the team."
+    }
+    ```
+
+### 12.8 Lấy danh sách thành viên phòng ban (Get Team Members)
+*   **Method**: `GET`
+*   **URL**: `/teams/{id}/members`
+*   **Quyền hạn**: Authority `TEAM:VIEW` hoặc vai trò `ADMIN`
+*   **Query Parameters (Tùy chọn)**:
+    *   `page`: Số trang cần lấy, mặc định là `1`
+    *   `limit`: Số bản ghi trên mỗi trang, mặc định là `20`
+    *   `search`: Tìm kiếm thành viên theo tên hiển thị (displayName) hoặc email
+*   **Response (200 OK)**:
+    ```json
+    {
+      "data": [
+        {
+          "id": 3,
+          "email": "staff@gmail.com",
+          "username": "staff",
+          "displayName": "IT Staff",
+          "avatarUrl": null,
+          "isActive": true,
+          "position": "Developer",
+          "type": "STAFF",
+          "status": "ACTIVE",
+          "lockReason": null,
+          "department": "IT",
+          "managerId": 2,
+          "teamId": 1,
+          "lastLoginAt": null,
+          "createdAt": "2026-05-27T14:00:00",
+          "updatedAt": "2026-05-27T14:00:00",
+          "lockedUntil": null,
+          "isDeleted": false,
+          "deletedAt": null,
+          "roles": []
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "totalElements": 1,
+        "totalPages": 1
+      }
     }
     ```
 

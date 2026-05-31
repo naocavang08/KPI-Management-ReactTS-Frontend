@@ -10,6 +10,7 @@ import {
     DialogTitle,
     IconButton,
     MenuItem,
+    Pagination,
     Paper,
     Stack,
     Table,
@@ -23,9 +24,9 @@ import {
     Typography,
 } from "@mui/material";
 import { CheckCircle2, ExternalLink, Loader2, Plus, RefreshCw, XCircle } from "lucide-react";
-import { createKpiAppeal, getPendingKpiAppeals, resolveKpiAppeal } from "../../api/kpi.api";
+import { createKpiAppeal, getKpiAppealHistory, getMyKpiAppeals, getPendingKpiAppeals, resolveKpiAppeal } from "../../api/kpi.api";
 import { useToastify } from "../../hooks/useToastify";
-import type { KpiAppeal, ResolveKpiAppealRequest } from "../../interfaces/kpi.types";
+import type { KpiAppeal, KpiAppealHistoryQuery, KpiAppealPagination, KpiAppealStatus, ResolveKpiAppealRequest } from "../../interfaces/kpi.types";
 import { hasKpiAuthority } from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import desginToken from "../../theme/desginToken";
@@ -48,6 +49,15 @@ const emptyAppealForm: AppealForm = {
     reason: "",
     evidenceLink: "",
 };
+
+const emptyPagination: KpiAppealPagination = {
+    page: 1,
+    limit: 10,
+    totalElements: 0,
+    totalPages: 1,
+};
+
+const appealStatuses: KpiAppealStatus[] = ["PENDING", "APPROVED", "REJECTED"];
 
 const inputSx = {
     "& .MuiInputBase-root": {
@@ -87,12 +97,27 @@ const formatDateTime = (value?: string | null) => {
     }).format(date);
 };
 
+const getAppealStatusTone = (status: KpiAppealStatus) => {
+    if (status === "APPROVED") return { bg: semantic.success.container, fg: semantic.success.onContainer };
+    if (status === "REJECTED") return { bg: semantic.danger.container, fg: semantic.danger.onContainer };
+    return { bg: semantic.warning.container, fg: semantic.warning.onContainer };
+};
+
 const KpiAppealPage = () => {
     const { success, error } = useToastify();
     const currentUser = useAuthStore((state) => state.user);
     const permissions = useAuthStore((state) => state.permissions);
     const [appeals, setAppeals] = useState<KpiAppeal[]>([]);
+    const [myAppeals, setMyAppeals] = useState<KpiAppeal[]>([]);
+    const [historyAppeals, setHistoryAppeals] = useState<KpiAppeal[]>([]);
+    const [historyPagination, setHistoryPagination] = useState<KpiAppealPagination>(emptyPagination);
+    const [myStatusFilter, setMyStatusFilter] = useState<"ALL" | KpiAppealStatus>("ALL");
+    const [historyStatusFilter, setHistoryStatusFilter] = useState<KpiAppealHistoryQuery["status"]>("ALL");
+    const [historyTeamId, setHistoryTeamId] = useState("");
+    const [historyPage, setHistoryPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
+    const [isMyLoading, setIsMyLoading] = useState(false);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
     const [appealForm, setAppealForm] = useState<AppealForm>(emptyAppealForm);
@@ -128,9 +153,61 @@ const KpiAppealPage = () => {
         }
     }, [canResolve, error]);
 
+    const loadMyAppeals = useCallback(async () => {
+        if (!canCreate) {
+            setMyAppeals([]);
+            return;
+        }
+
+        try {
+            setIsMyLoading(true);
+            const response = await getMyKpiAppeals({
+                status: myStatusFilter === "ALL" ? undefined : myStatusFilter,
+            });
+            setMyAppeals(response);
+        } catch (err) {
+            error("Cannot load my appeals", getErrorMessage(err, "Please try again later"));
+        } finally {
+            setIsMyLoading(false);
+        }
+    }, [canCreate, error, myStatusFilter]);
+
+    const loadAppealHistory = useCallback(async () => {
+        if (!canResolve) {
+            setHistoryAppeals([]);
+            setHistoryPagination(emptyPagination);
+            return;
+        }
+
+        try {
+            setIsHistoryLoading(true);
+            const normalizedTeamId = historyTeamId.trim();
+            const response = await getKpiAppealHistory({
+                page: historyPage,
+                limit: 10,
+                status: historyStatusFilter,
+                teamId: normalizedTeamId ? Number(normalizedTeamId) : undefined,
+            });
+            setHistoryAppeals(response.data);
+            setHistoryPagination(response.pagination);
+        } catch (err) {
+            error("Cannot load appeal history", getErrorMessage(err, "Please try again later"));
+        } finally {
+            setIsHistoryLoading(false);
+        }
+    }, [canResolve, error, historyPage, historyStatusFilter, historyTeamId]);
+
     useEffect(() => {
         void loadAppeals();
     }, [loadAppeals]);
+
+    useEffect(() => {
+        void loadMyAppeals();
+    }, [loadMyAppeals]);
+
+    useEffect(() => {
+        void loadAppealHistory();
+    }, [loadAppealHistory]);
 
     const updateAppealForm = <K extends keyof AppealForm>(field: K, value: AppealForm[K]) => {
         setAppealForm((prev) => ({ ...prev, [field]: value }));
@@ -163,6 +240,7 @@ const KpiAppealPage = () => {
             setCreateOpen(false);
             setAppealForm(emptyAppealForm);
             await loadAppeals();
+            await loadMyAppeals();
         } catch (err) {
             error("Cannot submit appeal", getErrorMessage(err, "Please try again later"));
         } finally {
@@ -199,6 +277,8 @@ const KpiAppealPage = () => {
             success("Appeal resolved", `Appeal ID ${resolveTarget.id}`);
             setResolveTarget(null);
             await loadAppeals();
+            await loadMyAppeals();
+            await loadAppealHistory();
         } catch (err) {
             error("Cannot resolve appeal", getErrorMessage(err, "Please try again later"));
         } finally {
@@ -218,7 +298,14 @@ const KpiAppealPage = () => {
                 <Stack direction="row" spacing={1}>
                     <Tooltip title={canResolve ? "Refresh pending appeals" : "Requires KPI/APPEAL:RESOLVE or ADMIN"}>
                         <span>
-                            <IconButton onClick={() => void loadAppeals()} disabled={isLoading || !canResolve}>
+                            <IconButton
+                                onClick={() => {
+                                    void loadAppeals();
+                                    void loadMyAppeals();
+                                    void loadAppealHistory();
+                                }}
+                                disabled={isLoading || isMyLoading || isHistoryLoading}
+                            >
                                 <RefreshCw size={18} />
                             </IconButton>
                         </span>
@@ -320,6 +407,182 @@ const KpiAppealPage = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
+            </Paper>
+
+            <Paper sx={{ borderRadius: radius.card, overflow: "hidden", border: elevation.level1.border, boxShadow: "none" }}>
+                <Box sx={{ p: 2, borderBottom: elevation.level1.border, bgcolor: colors.surfaceContainerLowest }}>
+                    <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ justifyContent: "space-between", alignItems: { md: "center" } }}>
+                        <Box>
+                            <Typography sx={{ ...typography.h2, color: colors.onSurface }}>My appeals</Typography>
+                            <Typography sx={{ ...typography.bodyBase, color: colors.outline }}>Appeals submitted by the current account.</Typography>
+                        </Box>
+                        <TextField
+                            select
+                            label="Status"
+                            size="small"
+                            value={myStatusFilter}
+                            onChange={(event) => setMyStatusFilter(event.target.value as "ALL" | KpiAppealStatus)}
+                            sx={{ ...inputSx, minWidth: 180 }}
+                            disabled={!canCreate || isMyLoading}
+                        >
+                            <MenuItem value="ALL">All</MenuItem>
+                            {appealStatuses.map((status) => (
+                                <MenuItem key={status} value={status}>{status}</MenuItem>
+                            ))}
+                        </TextField>
+                    </Stack>
+                </Box>
+                <TableContainer>
+                    <Table sx={{ minWidth: 920 }}>
+                        <TableHead sx={{ bgcolor: colors.surfaceContainerLow }}>
+                            <TableRow>
+                                {["Review", "Reason", "Evidence", "Status", "Resolved by", "Updated"].map((label) => (
+                                    <TableCell key={label} sx={{ ...typography.labelCaps, color: colors.outline, letterSpacing: 0 }}>
+                                        {label}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {isMyLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                                        <CircularProgress size={24} />
+                                    </TableCell>
+                                </TableRow>
+                            ) : myAppeals.length ? (
+                                myAppeals.map((appeal) => {
+                                    const tone = getAppealStatusTone(appeal.status);
+                                    return (
+                                        <TableRow key={appeal.id} hover>
+                                            <TableCell>ID {appeal.kpiReviewId}</TableCell>
+                                            <TableCell sx={{ maxWidth: 360 }}>{appeal.reason}</TableCell>
+                                            <TableCell>
+                                                <Button size="small" component="a" href={appeal.evidenceLink ?? "#"} target="_blank" rel="noreferrer" disabled={!appeal.evidenceLink} endIcon={<ExternalLink size={14} />}>
+                                                    Open
+                                                </Button>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip label={appeal.status} size="small" sx={{ borderRadius: radius.chip, bgcolor: tone.bg, color: tone.fg, fontWeight: 700 }} />
+                                            </TableCell>
+                                            <TableCell>{appeal.resolverDisplayName || appeal.resolvedBy || "-"}</TableCell>
+                                            <TableCell>{formatDateTime(appeal.updatedAt)}</TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                                        <Typography color="text.secondary">{canCreate ? "No appeals found" : "Requires KPI/APPEAL:CREATE or ADMIN"}</Typography>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Paper>
+
+            <Paper sx={{ borderRadius: radius.card, overflow: "hidden", border: elevation.level1.border, boxShadow: "none" }}>
+                <Box sx={{ p: 2, borderBottom: elevation.level1.border, bgcolor: colors.surfaceContainerLowest }}>
+                    <Stack direction={{ xs: "column", lg: "row" }} spacing={2} sx={{ justifyContent: "space-between", alignItems: { lg: "center" } }}>
+                        <Box>
+                            <Typography sx={{ ...typography.h2, color: colors.onSurface }}>Appeal history</Typography>
+                            <Typography sx={{ ...typography.bodyBase, color: colors.outline }}>Resolved appeals for your team scope or the company.</Typography>
+                        </Box>
+                        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                            <TextField
+                                select
+                                label="Status"
+                                size="small"
+                                value={historyStatusFilter}
+                                onChange={(event) => {
+                                    setHistoryStatusFilter(event.target.value as KpiAppealHistoryQuery["status"]);
+                                    setHistoryPage(1);
+                                }}
+                                sx={{ ...inputSx, minWidth: 170 }}
+                                disabled={!canResolve || isHistoryLoading}
+                            >
+                                <MenuItem value="ALL">All</MenuItem>
+                                {appealStatuses.map((status) => (
+                                    <MenuItem key={status} value={status}>{status}</MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                label="Team ID"
+                                size="small"
+                                type="number"
+                                value={historyTeamId}
+                                onChange={(event) => {
+                                    setHistoryTeamId(event.target.value);
+                                    setHistoryPage(1);
+                                }}
+                                sx={{ ...inputSx, minWidth: 150 }}
+                                disabled={!canResolve || isHistoryLoading}
+                            />
+                        </Stack>
+                    </Stack>
+                </Box>
+                <TableContainer>
+                    <Table sx={{ minWidth: 1040 }}>
+                        <TableHead sx={{ bgcolor: colors.surfaceContainerLow }}>
+                            <TableRow>
+                                {["Complainant", "Review", "Status", "Resolver", "Comment", "Updated"].map((label) => (
+                                    <TableCell key={label} sx={{ ...typography.labelCaps, color: colors.outline, letterSpacing: 0 }}>
+                                        {label}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {isHistoryLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                                        <CircularProgress size={24} />
+                                    </TableCell>
+                                </TableRow>
+                            ) : historyAppeals.length ? (
+                                historyAppeals.map((appeal) => {
+                                    const tone = getAppealStatusTone(appeal.status);
+                                    return (
+                                        <TableRow key={appeal.id} hover>
+                                            <TableCell>
+                                                <Typography sx={{ fontWeight: 700 }}>{appeal.complainantDisplayName}</Typography>
+                                                <Typography variant="caption" color="text.secondary">@{appeal.complainantUsername} / ID {appeal.userId}</Typography>
+                                            </TableCell>
+                                            <TableCell>ID {appeal.kpiReviewId}</TableCell>
+                                            <TableCell>
+                                                <Chip label={appeal.status} size="small" sx={{ borderRadius: radius.chip, bgcolor: tone.bg, color: tone.fg, fontWeight: 700 }} />
+                                            </TableCell>
+                                            <TableCell>{appeal.resolverDisplayName || appeal.resolverUsername || appeal.resolvedBy || "-"}</TableCell>
+                                            <TableCell sx={{ maxWidth: 360 }}>{appeal.resolutionComment || "-"}</TableCell>
+                                            <TableCell>{formatDateTime(appeal.updatedAt)}</TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                                        <Typography color="text.secondary">{canResolve ? "No appeal history found" : "Requires KPI/APPEAL:RESOLVE or ADMIN"}</Typography>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: elevation.level1.border }}>
+                    <Typography variant="caption" color="text.secondary">
+                        Showing {historyAppeals.length} of {historyPagination.totalElements} appeals
+                    </Typography>
+                    <Pagination
+                        count={Math.max(historyPagination.totalPages, 1)}
+                        page={historyPage}
+                        onChange={(_event, value) => setHistoryPage(value)}
+                        size="small"
+                        shape="rounded"
+                        color="primary"
+                        disabled={!canResolve || isHistoryLoading}
+                    />
+                </Box>
             </Paper>
 
             <Dialog open={createOpen} onClose={() => setCreateOpen(false)} fullWidth maxWidth="sm">

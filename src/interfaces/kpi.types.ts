@@ -86,6 +86,8 @@ export interface KpiAppeal {
     evidenceLink?: string | null;
     status: KpiAppealStatus;
     resolvedBy?: number | null;
+    resolverUsername?: string | null;
+    resolverDisplayName?: string | null;
     resolutionComment?: string | null;
     createdAt?: string | null;
     updatedAt?: string | null;
@@ -95,6 +97,29 @@ export interface CreateKpiAppealRequest {
     kpiReviewId: number;
     reason: string;
     evidenceLink: string;
+}
+
+export interface KpiAppealHistoryQuery {
+    page?: number;
+    limit?: number;
+    status?: KpiAppealStatus | "ALL" | "";
+    teamId?: number;
+}
+
+export interface MyKpiAppealQuery {
+    status?: KpiAppealStatus;
+}
+
+export interface KpiAppealPagination {
+    page: number;
+    limit: number;
+    totalElements: number;
+    totalPages: number;
+}
+
+export interface KpiAppealHistoryResponse {
+    data: KpiAppeal[];
+    pagination: KpiAppealPagination;
 }
 
 export interface ResolveKpiAppealRequest {

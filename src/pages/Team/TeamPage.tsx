@@ -30,7 +30,7 @@ import {
     type SelectChangeEvent,
 } from "@mui/material";
 import { Building2, Edit2, Eye, Loader2, Plus, Search, Trash2, UserMinus, UserPlus, Users, X } from "lucide-react";
-import { addTeamMember, createTeam, deleteTeam, getTeamById, getTeams, removeTeamMember, updateTeam } from "../../api/team.api";
+import { addTeamMember, createTeam, deleteTeam, getTeamById, getTeamMembers, getTeams, removeTeamMember, updateTeam } from "../../api/team.api";
 import { getUsers } from "../../api/user.api";
 import { useToastify } from "../../hooks/useToastify";
 import { hasAuthority } from "../../lib/permissions";
@@ -128,6 +128,7 @@ const TeamPage = () => {
     const [actionTeam, setActionTeam] = useState<Team | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Team | null>(null);
     const [detailTeam, setDetailTeam] = useState<TeamDetail | null>(null);
+    const [detailMembers, setDetailMembers] = useState<ManagedUser[]>([]);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
     const [managerOptions, setManagerOptions] = useState<ManagedUser[]>([]);
     const [isManagersLoading, setIsManagersLoading] = useState(false);
@@ -230,7 +231,6 @@ const TeamPage = () => {
             setForm(buildFormFromTeam(detail));
             setActionTeam(detail);
             setTeamDialogMode("edit");
-            setMemberCounts((prev) => ({ ...prev, [detail.id]: detail.members.length }));
         } catch (err) {
             error("Cannot load team detail", getErrorMessage(err, "Please try again later"));
         } finally {
@@ -306,9 +306,15 @@ const TeamPage = () => {
         try {
             setIsDetailLoading(true);
             setDetailTeam(null);
-            const [detail] = await Promise.all([getTeamById(team.id), loadMemberOptions()]);
+            setDetailMembers([]);
+            const [detail, members] = await Promise.all([
+                getTeamById(team.id),
+                getTeamMembers(team.id, { page: 1, limit: 100 }),
+                loadMemberOptions(),
+            ]);
             setDetailTeam(detail);
-            setMemberCounts((prev) => ({ ...prev, [detail.id]: detail.members.length }));
+            setDetailMembers(members.data);
+            setMemberCounts((prev) => ({ ...prev, [detail.id]: members.pagination.totalElements }));
             setSelectedMemberId("");
         } catch (err) {
             error("Cannot load team detail", getErrorMessage(err, "Please try again later"));
@@ -318,9 +324,13 @@ const TeamPage = () => {
     };
 
     const refreshDetailTeam = async (teamId: number) => {
-        const detail = await getTeamById(teamId);
+        const [detail, members] = await Promise.all([
+            getTeamById(teamId),
+            getTeamMembers(teamId, { page: 1, limit: 100 }),
+        ]);
         setDetailTeam(detail);
-        setMemberCounts((prev) => ({ ...prev, [detail.id]: detail.members.length }));
+        setDetailMembers(members.data);
+        setMemberCounts((prev) => ({ ...prev, [detail.id]: members.pagination.totalElements }));
     };
 
     const addMember = async () => {
@@ -589,11 +599,28 @@ const TeamPage = () => {
                 </Box>
             </Dialog>
 
-            <Dialog open={isDetailLoading || Boolean(detailTeam)} onClose={() => setDetailTeam(null)} fullWidth maxWidth="md">
+            <Dialog
+                open={isDetailLoading || Boolean(detailTeam)}
+                onClose={() => {
+                    setDetailTeam(null);
+                    setDetailMembers([]);
+                }}
+                fullWidth
+                maxWidth="md"
+            >
                 <DialogTitle>
                     <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
                         <Typography variant="h6">Team detail</Typography>
-                        <IconButton size="small" onClick={() => setDetailTeam(null)} disabled={isDetailLoading}><X size={18} /></IconButton>
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                setDetailTeam(null);
+                                setDetailMembers([]);
+                            }}
+                            disabled={isDetailLoading}
+                        >
+                            <X size={18} />
+                        </IconButton>
                     </Stack>
                 </DialogTitle>
                 <DialogContent>
@@ -619,7 +646,7 @@ const TeamPage = () => {
                             <Box>
                                 <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { md: "center" }, mb: 1 }}>
                                     <Typography sx={{ ...typography.labelCaps, color: colors.outline }}>
-                                        Members ({detailTeam.members.length})
+                                        Members ({detailMembers.length})
                                     </Typography>
                                     {canUpdate && (
                                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ minWidth: { md: 360 } }}>
@@ -632,7 +659,7 @@ const TeamPage = () => {
                                                     disabled={isSubmitting}
                                                 >
                                                     {memberOptions
-                                                        .filter((user) => !detailTeam.members.some((member) => member.id === user.id))
+                                                        .filter((user) => !detailMembers.some((member) => member.id === user.id))
                                                         .map((user) => (
                                                             <MenuItem key={user.id} value={String(user.id)}>
                                                                 {user.displayName} ({user.username})
@@ -664,7 +691,7 @@ const TeamPage = () => {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {detailTeam.members.length ? detailTeam.members.map((member) => (
+                                            {detailMembers.length ? detailMembers.map((member) => (
                                                 <TableRow key={member.id}>
                                                     <TableCell>
                                                         <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>

@@ -6,9 +6,12 @@ import type {
     GetTeamKpiQuery,
     GetUserKpiQuery,
     KpiAppeal,
+    KpiAppealHistoryQuery,
+    KpiAppealHistoryResponse,
     KpiMessageResponse,
     KpiReview,
     KpiWeights,
+    MyKpiAppealQuery,
     ResolveKpiAppealRequest,
     TeamKpiResponse,
     UpdateKpiReviewRequest,
@@ -45,6 +48,14 @@ export const createKpiAppeal = (body: CreateKpiAppealRequest) => {
 
 export const getPendingKpiAppeals = () => {
     return apiClient.get<KpiAppeal[]>("/kpi/appeals/team").then((res) => res.data);
+};
+
+export const getMyKpiAppeals = (params?: MyKpiAppealQuery) => {
+    return apiClient.get<KpiAppeal[]>("/kpi/appeals/me", { params }).then((res) => res.data);
+};
+
+export const getKpiAppealHistory = (params?: KpiAppealHistoryQuery) => {
+    return apiClient.get<KpiAppealHistoryResponse>("/kpi/appeals/history", { params }).then((res) => res.data);
 };
 
 export const resolveKpiAppeal = (id: number, body: ResolveKpiAppealRequest) => {

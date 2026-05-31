@@ -1,5 +1,3 @@
-import type { ManagedUser } from "./user.types";
-
 export interface Team {
     id: number;
     name: string;
@@ -12,9 +10,7 @@ export interface Team {
     updatedAt?: string | null;
 }
 
-export interface TeamDetail extends Team {
-    members: ManagedUser[];
-}
+export type TeamDetail = Team;
 
 export interface TeamPagination {
     page: number;
@@ -46,6 +42,17 @@ export interface UpdateTeamRequest {
     code: string;
     description?: string;
     managerId?: number | null;
+}
+
+export interface TeamMemberListQuery {
+    page?: number;
+    limit?: number;
+    search?: string;
+}
+
+export interface TeamMemberListResponse {
+    data: import("./user.types").ManagedUser[];
+    pagination: TeamPagination;
 }
 
 export interface AddTeamMemberRequest {

@@ -5,6 +5,8 @@ import type {
     CreateTeamRequest,
     Team,
     TeamDetail,
+    TeamMemberListQuery,
+    TeamMemberListResponse,
     TeamListQuery,
     TeamListResponse,
     UpdateTeamRequest,
@@ -36,4 +38,8 @@ export const addTeamMember = (id: number, body: AddTeamMemberRequest) => {
 
 export const removeTeamMember = (id: number, userId: number) => {
     return apiClient.delete<ApiMessageResponse>(`/teams/${id}/members/${userId}`).then((res) => res.data);
+};
+
+export const getTeamMembers = (id: number, params?: TeamMemberListQuery) => {
+    return apiClient.get<TeamMemberListResponse>(`/teams/${id}/members`, { params }).then((res) => res.data);
 };
