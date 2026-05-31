@@ -15,6 +15,7 @@ import KpiReviewPage from '../pages/Kpi/KpiReviewPage';
 import KpiAppealPage from '../pages/Kpi/KpiAppealPage';
 import KpiWeightsPage from '../pages/Kpi/KpiWeightsPage';
 import KpiExportPage from '../pages/Kpi/KpiExportPage';
+import TeamPage from '../pages/Team/TeamPage';
 
 const AppRoutes = () => {
     return (
@@ -44,6 +45,7 @@ const AppRoutes = () => {
                 <Route path="/admin/user" element={<UserPage />} />
                 <Route path="/tasks" element={<TaskPage />} />
                 <Route path="/tasks/:id" element={<TaskDetailPage />} />
+                <Route path="/teams" element={<TeamPage />} />
                 <Route path="/kpi/scores" element={<KpiScorePage />} />
                 <Route path="/kpi/reviews" element={<KpiReviewPage />} />
                 <Route path="/kpi/appeals" element={<KpiAppealPage />} />

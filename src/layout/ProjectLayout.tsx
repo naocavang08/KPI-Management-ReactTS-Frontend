@@ -19,6 +19,7 @@ import {
 import {
 	BarChart3,
 	Bell,
+	Building2,
 	ChevronDown,
 	ChevronRight,
 	CircleHelp,
@@ -124,6 +125,12 @@ const navigationItems: NavigationItem[] = [
 		label: "Task Management",
 		icon: FolderKanban,
 		path: "/tasks",
+	},
+	{
+		id: "teams",
+		label: "Team Management",
+		icon: Building2,
+		path: "/teams",
 	},
 	{
 		id: "settings",
