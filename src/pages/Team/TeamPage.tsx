@@ -29,8 +29,8 @@ import {
     Typography,
     type SelectChangeEvent,
 } from "@mui/material";
-import { Building2, Edit2, Eye, Loader2, Plus, Search, Trash2, Users, X } from "lucide-react";
-import { createTeam, deleteTeam, getTeamById, getTeams, updateTeam } from "../../api/team.api";
+import { Building2, Edit2, Eye, Loader2, Plus, Search, Trash2, UserMinus, UserPlus, Users, X } from "lucide-react";
+import { addTeamMember, createTeam, deleteTeam, getTeamById, getTeams, removeTeamMember, updateTeam } from "../../api/team.api";
 import { getUsers } from "../../api/user.api";
 import { useToastify } from "../../hooks/useToastify";
 import { hasAuthority } from "../../lib/permissions";
@@ -131,6 +131,8 @@ const TeamPage = () => {
     const [isDetailLoading, setIsDetailLoading] = useState(false);
     const [managerOptions, setManagerOptions] = useState<ManagedUser[]>([]);
     const [isManagersLoading, setIsManagersLoading] = useState(false);
+    const [memberOptions, setMemberOptions] = useState<ManagedUser[]>([]);
+    const [selectedMemberId, setSelectedMemberId] = useState("");
     const [memberCounts, setMemberCounts] = useState<Record<number, number>>({});
 
     const canView = useMemo(
@@ -200,6 +202,15 @@ const TeamPage = () => {
             error("Cannot load manager list", getErrorMessage(err, "Please try again later"));
         } finally {
             setIsManagersLoading(false);
+        }
+    }, [error]);
+
+    const loadMemberOptions = useCallback(async () => {
+        try {
+            const response = await getUsers({ page: 1, limit: 100, status: "active" });
+            setMemberOptions(response.data);
+        } catch (err) {
+            error("Cannot load user list", getErrorMessage(err, "Please try again later"));
         }
     }, [error]);
 
@@ -295,13 +306,53 @@ const TeamPage = () => {
         try {
             setIsDetailLoading(true);
             setDetailTeam(null);
-            const detail = await getTeamById(team.id);
+            const [detail] = await Promise.all([getTeamById(team.id), loadMemberOptions()]);
             setDetailTeam(detail);
             setMemberCounts((prev) => ({ ...prev, [detail.id]: detail.members.length }));
+            setSelectedMemberId("");
         } catch (err) {
             error("Cannot load team detail", getErrorMessage(err, "Please try again later"));
         } finally {
             setIsDetailLoading(false);
+        }
+    };
+
+    const refreshDetailTeam = async (teamId: number) => {
+        const detail = await getTeamById(teamId);
+        setDetailTeam(detail);
+        setMemberCounts((prev) => ({ ...prev, [detail.id]: detail.members.length }));
+    };
+
+    const addMember = async () => {
+        if (!detailTeam || !selectedMemberId) return;
+
+        try {
+            setIsSubmitting(true);
+            const response = await addTeamMember(detailTeam.id, { userId: Number(selectedMemberId) });
+            success("Member added", response.message || detailTeam.name);
+            setSelectedMemberId("");
+            await refreshDetailTeam(detailTeam.id);
+            await loadTeams();
+        } catch (err) {
+            error("Cannot add member", getErrorMessage(err, "Please try again later"));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const removeMember = async (user: ManagedUser) => {
+        if (!detailTeam) return;
+
+        try {
+            setIsSubmitting(true);
+            const response = await removeTeamMember(detailTeam.id, user.id);
+            success("Member removed", response.message || user.displayName);
+            await refreshDetailTeam(detailTeam.id);
+            await loadTeams();
+        } catch (err) {
+            error("Cannot remove member", getErrorMessage(err, "Please try again later"));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -566,9 +617,41 @@ const TeamPage = () => {
                             </Paper>
 
                             <Box>
-                                <Typography sx={{ ...typography.labelCaps, color: colors.outline, mb: 1 }}>
-                                    Members ({detailTeam.members.length})
-                                </Typography>
+                                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { md: "center" }, mb: 1 }}>
+                                    <Typography sx={{ ...typography.labelCaps, color: colors.outline }}>
+                                        Members ({detailTeam.members.length})
+                                    </Typography>
+                                    {canUpdate && (
+                                        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ minWidth: { md: 360 } }}>
+                                            <FormControl size="small" fullWidth>
+                                                <InputLabel>Add member</InputLabel>
+                                                <Select
+                                                    value={selectedMemberId}
+                                                    label="Add member"
+                                                    onChange={(event: SelectChangeEvent) => setSelectedMemberId(event.target.value)}
+                                                    disabled={isSubmitting}
+                                                >
+                                                    {memberOptions
+                                                        .filter((user) => !detailTeam.members.some((member) => member.id === user.id))
+                                                        .map((user) => (
+                                                            <MenuItem key={user.id} value={String(user.id)}>
+                                                                {user.displayName} ({user.username})
+                                                            </MenuItem>
+                                                        ))}
+                                                </Select>
+                                            </FormControl>
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<UserPlus size={16} />}
+                                                disabled={!selectedMemberId || isSubmitting}
+                                                onClick={() => void addMember()}
+                                                sx={{ minWidth: 110, textTransform: "none" }}
+                                            >
+                                                Add
+                                            </Button>
+                                        </Stack>
+                                    )}
+                                </Stack>
                                 <TableContainer component={Paper} elevation={0} sx={{ border: elevation.level1.border, borderRadius: radius.card }}>
                                     <Table size="small">
                                         <TableHead sx={{ bgcolor: colors.surfaceContainerLow }}>
@@ -577,6 +660,7 @@ const TeamPage = () => {
                                                 <TableCell>Position</TableCell>
                                                 <TableCell>Type</TableCell>
                                                 <TableCell>Status</TableCell>
+                                                {canUpdate && <TableCell align="right">Actions</TableCell>}
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -596,10 +680,21 @@ const TeamPage = () => {
                                                     <TableCell>{member.position || "Not updated"}</TableCell>
                                                     <TableCell>{member.type}</TableCell>
                                                     <TableCell>{member.status}</TableCell>
+                                                    {canUpdate && (
+                                                        <TableCell align="right">
+                                                            <Tooltip title="Remove member">
+                                                                <span>
+                                                                    <IconButton size="small" color="error" disabled={isSubmitting} onClick={() => void removeMember(member)}>
+                                                                        <UserMinus size={16} />
+                                                                    </IconButton>
+                                                                </span>
+                                                            </Tooltip>
+                                                        </TableCell>
+                                                    )}
                                                 </TableRow>
                                             )) : (
                                                 <TableRow>
-                                                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                                    <TableCell colSpan={canUpdate ? 5 : 4} align="center" sx={{ py: 4 }}>
                                                         <Typography color="text.secondary">No members in this team</Typography>
                                                     </TableCell>
                                                 </TableRow>

@@ -19,7 +19,7 @@ export const getUserKpi = (userId: number, params?: GetUserKpiQuery) => {
     return apiClient.get<UserKpiResponse>(`/kpi/user/${userId}`, { params }).then((res) => res.data);
 };
 
-export const getTeamKpi = (teamId: string, params?: GetTeamKpiQuery) => {
+export const getTeamKpi = (teamId: number | string, params?: GetTeamKpiQuery) => {
     return apiClient.get<TeamKpiResponse>(`/kpi/team/${teamId}`, { params }).then((res) => res.data);
 };
 

@@ -110,11 +110,11 @@ const emptyPagination: TaskPagination = {
 };
 
 const emptySummary: TaskSummary = {
-    ASSIGNED: 0,
-    IN_PROGRESS: 0,
-    PENDING_REVIEW: 0,
-    COMPLETED: 0,
-    OVERDUE: 0,
+    assigned: 0,
+    inProgress: 0,
+    pendingReview: 0,
+    completed: 0,
+    overdue: 0,
 };
 
 const inputSx = {
@@ -174,6 +174,18 @@ const getStatusColor = (status: TaskStatus) => {
     };
 
     return statusColor[status];
+};
+
+const getSummaryValue = (summary: TaskSummary, status: TaskStatus) => {
+    const keys: Record<TaskStatus, keyof TaskSummary> = {
+        ASSIGNED: "assigned",
+        IN_PROGRESS: "inProgress",
+        PENDING_REVIEW: "pendingReview",
+        COMPLETED: "completed",
+        OVERDUE: "overdue",
+    };
+
+    return summary[keys[status]] ?? 0;
 };
 
 const getPriorityColor = (priority: TaskPriority) => {
@@ -333,7 +345,7 @@ const TaskPage = () => {
         void loadAssignees();
     }, [loadAssignees]);
 
-    const totalTasks = useMemo(() => taskStatuses.reduce((total, status) => total + (summary[status] ?? 0), 0), [summary]);
+    const totalTasks = useMemo(() => taskStatuses.reduce((total, status) => total + getSummaryValue(summary, status), 0), [summary]);
 
     const closeActionMenu = () => {
         setAnchorEl(null);
@@ -571,7 +583,7 @@ const TaskPage = () => {
                         <Paper key={status} elevation={0} sx={{ p: 2, borderRadius: radius.card, border: elevation.level1.border, bgcolor: colors.surfaceContainerLowest }}>
                             <Typography sx={{ ...typography.labelCaps, color: colors.outline }}>{getStatusLabel(status)}</Typography>
                             <Stack direction="row" sx={{ mt: 1, alignItems: "center", justifyContent: "space-between" }}>
-                                <Typography sx={{ ...typography.h1, color: colors.onSurface }}>{summary[status] ?? 0}</Typography>
+                                <Typography sx={{ ...typography.h1, color: colors.onSurface }}>{getSummaryValue(summary, status)}</Typography>
                                 <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: tone.fg }} />
                             </Stack>
                             {isSummaryLoading && <LinearProgress sx={{ mt: 1 }} />}

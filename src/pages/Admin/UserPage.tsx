@@ -56,8 +56,10 @@ import {
     updateUser,
 } from "../../api/user.api";
 import { getRoles } from "../../api/role.api";
+import { getTeams } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
 import type { AuthRole, UserStatus, UserType } from "../../interfaces/auth.types";
+import type { Team } from "../../interfaces/team.types";
 import type { CreateUserRequest, ManagedUser, UpdateUserRequest, UserPagination } from "../../interfaces/user.types";
 import desginToken from "../../theme/desginToken";
 
@@ -74,6 +76,7 @@ type UserForm = {
     position: string;
     type: UserType;
     avatar: string;
+    teamId: string;
     status: UserStatus;
     lockedUntil: string;
 };
@@ -85,6 +88,7 @@ const emptyForm: UserForm = {
     position: "",
     type: "STAFF",
     avatar: "",
+    teamId: "",
     status: "ACTIVE",
     lockedUntil: "",
 };
@@ -148,6 +152,7 @@ const buildFormFromUser = (user: ManagedUser): UserForm => ({
     position: user.position ?? "",
     type: user.type,
     avatar: user.avatarUrl ?? "",
+    teamId: user.teamId ? String(user.teamId) : "",
     status: user.status,
     lockedUntil: user.lockedUntil ?? "",
 });
@@ -171,6 +176,8 @@ const UserPage = () => {
     const [lockReason, setLockReason] = useState("");
     const [roleTarget, setRoleTarget] = useState<ManagedUser | null>(null);
     const [availableRoles, setAvailableRoles] = useState<AuthRole[]>([]);
+    const [teamOptions, setTeamOptions] = useState<Team[]>([]);
+    const [isTeamsLoading, setIsTeamsLoading] = useState(false);
     const [userRoles, setUserRoles] = useState<AuthRole[]>([]);
     const [selectedRoleId, setSelectedRoleId] = useState("");
     const [isRoleLoading, setIsRoleLoading] = useState(false);
@@ -229,13 +236,14 @@ const UserPage = () => {
     const openCreateDialog = () => {
         setForm(emptyForm);
         setUserDialogMode("create");
+        void loadTeamOptions();
     };
 
     const openEditDialog = async (user: ManagedUser) => {
         closeActionMenu();
         try {
             setIsSubmitting(true);
-            const detail = await getUserById(user.id);
+            const [detail] = await Promise.all([getUserById(user.id), loadTeamOptions()]);
             setForm(buildFormFromUser(detail));
             setActionUser(detail);
             setUserDialogMode("edit");
@@ -256,6 +264,18 @@ const UserPage = () => {
         setForm((prev) => ({ ...prev, [field]: value }));
     };
 
+    const loadTeamOptions = useCallback(async () => {
+        try {
+            setIsTeamsLoading(true);
+            const response = await getTeams({ page: 1, limit: 100 });
+            setTeamOptions(response.data);
+        } catch (err) {
+            error("Không tải được phòng ban", getErrorMessage(err, "Vui lòng thử lại sau"));
+        } finally {
+            setIsTeamsLoading(false);
+        }
+    }, [error]);
+
     const submitUserForm = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const fullName = form.fullName.trim();
@@ -263,6 +283,7 @@ const UserPage = () => {
         const email = form.email.trim();
         const position = form.position.trim();
         const avatar = form.avatar.trim();
+        const teamId = form.teamId ? Number(form.teamId) : undefined;
 
         if (!fullName || !position || (userDialogMode === "create" && (!username || !email))) {
             error("Thiếu thông tin", "Vui lòng nhập username, tên, email và vị trí");
@@ -279,6 +300,7 @@ const UserPage = () => {
                     position,
                     type: form.type,
                     avatar: avatar || undefined,
+                    teamId,
                 };
                 await createUser(payload);
                 success("Đã tạo người dùng", "Danh sách người dùng đã được cập nhật");
@@ -290,6 +312,7 @@ const UserPage = () => {
                     avatar: avatar || undefined,
                     status: form.status,
                     lockedUntil: form.lockedUntil.trim() || null,
+                    teamId: teamId ?? null,
                 };
                 await updateUser(actionUser.id, payload);
                 success("Đã cập nhật người dùng", "Thông tin người dùng đã được lưu");
@@ -649,6 +672,22 @@ const UserPage = () => {
                                 </Select>
                             </FormControl>
                             <TextField label="Avatar URL" value={form.avatar} onChange={(event) => handleFormChange("avatar", event.target.value)} fullWidth sx={inputSx} />
+                            <FormControl fullWidth>
+                                <InputLabel>Phòng ban</InputLabel>
+                                <Select
+                                    value={form.teamId}
+                                    label="Phòng ban"
+                                    onChange={(event: SelectChangeEvent) => handleFormChange("teamId", event.target.value)}
+                                    disabled={isTeamsLoading}
+                                >
+                                    <MenuItem value="">Chưa gán</MenuItem>
+                                    {teamOptions.map((team) => (
+                                        <MenuItem key={team.id} value={String(team.id)}>
+                                            {team.name} ({team.code})
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                             {userDialogMode === "edit" && (
                                 <>
                                     <FormControl fullWidth>
@@ -664,7 +703,7 @@ const UserPage = () => {
                     </DialogContent>
                     <DialogActions sx={{ px: 3, pb: 3 }}>
                         <Button onClick={closeUserDialog} disabled={isSubmitting}>Hủy</Button>
-                        <Button type="submit" variant="contained" disabled={isSubmitting} startIcon={isSubmitting ? <Loader2 size={16} /> : undefined}>
+                        <Button type="submit" variant="contained" disabled={isSubmitting || isTeamsLoading} startIcon={isSubmitting ? <Loader2 size={16} /> : undefined}>
                             Lưu
                         </Button>
                     </DialogActions>

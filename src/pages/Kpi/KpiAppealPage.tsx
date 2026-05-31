@@ -147,8 +147,8 @@ const KpiAppealPage = () => {
             return;
         }
 
-        if (!kpiReviewId || !reason) {
-            error("Invalid appeal", "Review ID and reason are required");
+        if (!kpiReviewId || !reason || !evidenceLink) {
+            error("Invalid appeal", "Review ID, reason, and evidence link are required");
             return;
         }
 
@@ -157,7 +157,7 @@ const KpiAppealPage = () => {
             await createKpiAppeal({
                 kpiReviewId,
                 reason,
-                ...(evidenceLink ? { evidenceLink } : {}),
+                evidenceLink,
             });
             success("Appeal submitted", `Review ID ${kpiReviewId}`);
             setCreateOpen(false);
@@ -328,7 +328,7 @@ const KpiAppealPage = () => {
                     <DialogContent>
                         <Stack spacing={2} sx={{ pt: 1 }}>
                             <TextField label="KPI review ID" type="number" value={appealForm.kpiReviewId} onChange={(event) => updateAppealForm("kpiReviewId", event.target.value)} required fullWidth sx={inputSx} />
-                            <TextField label="Evidence link" value={appealForm.evidenceLink} onChange={(event) => updateAppealForm("evidenceLink", event.target.value)} fullWidth sx={inputSx} />
+                            <TextField label="Evidence link" value={appealForm.evidenceLink} onChange={(event) => updateAppealForm("evidenceLink", event.target.value)} required fullWidth sx={inputSx} />
                             <TextField label="Reason" value={appealForm.reason} onChange={(event) => updateAppealForm("reason", event.target.value)} required fullWidth multiline minRows={4} sx={inputSx} />
                         </Stack>
                     </DialogContent>

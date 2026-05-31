@@ -1,6 +1,7 @@
 import apiClient from "./api.client";
 import type { ApiMessageResponse } from "../interfaces/auth.types";
 import type {
+    AddTeamMemberRequest,
     CreateTeamRequest,
     Team,
     TeamDetail,
@@ -27,4 +28,12 @@ export const updateTeam = (id: number, body: UpdateTeamRequest) => {
 
 export const deleteTeam = (id: number) => {
     return apiClient.delete<ApiMessageResponse>(`/teams/${id}`).then((res) => res.data);
+};
+
+export const addTeamMember = (id: number, body: AddTeamMemberRequest) => {
+    return apiClient.post<ApiMessageResponse>(`/teams/${id}/members`, body).then((res) => res.data);
+};
+
+export const removeTeamMember = (id: number, userId: number) => {
+    return apiClient.delete<ApiMessageResponse>(`/teams/${id}/members/${userId}`).then((res) => res.data);
 };

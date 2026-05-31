@@ -94,7 +94,7 @@ export interface KpiAppeal {
 export interface CreateKpiAppealRequest {
     kpiReviewId: number;
     reason: string;
-    evidenceLink?: string;
+    evidenceLink: string;
 }
 
 export interface ResolveKpiAppealRequest {

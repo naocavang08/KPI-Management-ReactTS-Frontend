@@ -1,7 +1,7 @@
 # Tài liệu API - Hệ thống Quản lý KPI (KPI Management System)
-*Cập nhật lúc: 21:00 ngày 30/05/2026 (Version 2)*
+*Cập nhật lúc: 15:15 ngày 31/05/2026 (Version 4)*
 
-Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thống Backend (Spring Boot) bao gồm các module Authentication, Users, Roles & Permissions, Task Management, Task Extensions, Task History, KPI Core, KPI Reviews, KPI Appeals, KPI Weights, và KPI Reports (Excel Export).
+Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thống Backend (Spring Boot) bao gồm các module Authentication, Users, Roles & Permissions, Task Management, Task Extensions, Task History, KPI Core, KPI Reviews, KPI Appeals, KPI Weights, KPI Reports (Excel Export), và Team Management.
 
 ---
 
@@ -12,9 +12,17 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Môi trường Production (Render)**: `https://kpi-be.onrender.com`
 
 ### Headers Mặc định
-Đối với mọi Request (trừ các API đăng nhập, quên mật khẩu và lấy vai trò công khai), bạn cần gửi kèm:
+Đối với mọi Request (trừ các API đăng nhập, quên mật khẩu), bạn cần gửi kèm:
 *   `Content-Type: application/json`
 *   `Authorization: Bearer <accessToken>` (Token nhận được sau khi đăng nhập thành công)
+
+### Tài khoản mặc định (Seed Data)
+
+| Username | Password | Role    | Email             | Department | Team         |
+|----------|----------|---------|-------------------|------------|--------------|
+| admin    | 1234567  | ADMIN   | admin@gmail.com   | HR         | HR Department |
+| manager  | 1234567  | MANAGER | manager@gmail.com | IT         | IT Department |
+| staff    | 1234567  | STAFF   | staff@gmail.com   | IT         | IT Department |
 
 ---
 
@@ -23,11 +31,14 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 1.1 Đăng nhập (Login)
 *   **Method**: `POST`
 *   **URL**: `/auth/login`
+*   **Lưu ý bảo mật**:
+    *   Sau **5 lần đăng nhập sai** liên tiếp, tài khoản sẽ bị khóa tạm thời **15 phút**.
+    *   Tài khoản bị Admin khóa thủ công (`isActive = false`) sẽ không thể đăng nhập và nhận thông báo lỗi cụ thể.
 *   **Body (JSON)**:
     ```json
     {
       "username": "admin",
-      "password": "123456"
+      "password": "1234567"
     }
     ```
 *   **Response (200 OK)**:
@@ -53,9 +64,12 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
         "avatarUrl": "https://example.com/avatar.jpg",
         "isActive": true,
         "position": "System Admin",
-        "type": "STAFF", // INTERNSHIP, STAFF, COLLABORATOR
-        "status": "ACTIVE", // ACTIVE, LOCKED, INACTIVE
+        "type": "STAFF",
+        "status": "ACTIVE",
         "lockReason": null,
+        "department": "HR",
+        "managerId": null,
+        "teamId": 2,
         "lastLoginAt": "2026-05-27T15:00:00",
         "createdAt": "2026-05-27T14:00:00",
         "updatedAt": "2026-05-27T15:00:00",
@@ -74,13 +88,14 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       },
       "permissions": [
         {
-          "resource": "user",
-          "action": "create",
-          "scope": null
+          "resource": "SYSTEM",
+          "action": "ACCESS",
+          "scope": "ALL"
         }
       ]
     }
     ```
+    > **Ghi chú `permissions`**: Scope = `"ALL"` (ADMIN) | `"TEAM"` (MANAGER) | `"SELF"` (STAFF).
 
 ### 1.3 Cập nhật Họ & Tên của bản thân (Update Fullname)
 *   **Method**: `PATCH`
@@ -155,11 +170,12 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 1.7 Khôi phục mật khẩu bằng OTP (Reset Password)
 *   **Method**: `POST`
 *   **URL**: `/auth/reset-password`
+*   **Lưu ý**: OTP có hiệu lực **5 phút**. Tối đa **3 lần nhập sai** sẽ hủy OTP yêu cầu gửi lại.
 *   **Body (JSON)**:
     ```json
     {
       "email": "vpsacc21@gmail.com",
-      "otp": "123456", // Mã OTP 6 số nhận được qua email
+      "otp": "123456",
       "newPassword": "newpassword123"
     }
     ```
@@ -174,11 +190,11 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ---
 
 ## 👥 2. Nhóm API Quản lý Người dùng (`/users/**`)
-*(Các API này yêu cầu Token có quyền **ADMIN**)*
 
 ### 2.1 Lấy danh sách Người dùng (Phân trang & Bộ lọc)
 *   **Method**: `GET`
 *   **URL**: `/users`
+*   **Quyền hạn**: Role `ADMIN`
 *   **Query Parameters (Tùy chọn)**:
     *   `page`: Số trang, mặc định là `1`
     *   `limit`: Số bản ghi mỗi trang, mặc định là `20`
@@ -199,6 +215,16 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "position": "Developer",
           "type": "STAFF",
           "status": "ACTIVE",
+          "lockReason": null,
+          "department": "IT",
+          "managerId": 3,
+          "teamId": 1,
+          "lastLoginAt": null,
+          "createdAt": "2026-05-27T14:00:00",
+          "updatedAt": "2026-05-27T14:00:00",
+          "lockedUntil": null,
+          "isDeleted": false,
+          "deletedAt": null,
           "roles": []
         }
       ],
@@ -214,17 +240,24 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 2.2 Admin tạo người dùng mới (Create User)
 *   **Method**: `POST`
 *   **URL**: `/users`
+*   **Quyền hạn**: Role `ADMIN`
+*   **Lưu ý**: Hệ thống tự động sinh mật khẩu ngẫu nhiên 10 ký tự khi tạo tài khoản mới.
 *   **Body (JSON)**:
     ```json
     {
-      "username": "nguyenvanb", // Từ 3-50 ký tự, chỉ gồm chữ, số, gạch dưới và dấu chấm
+      "username": "nguyenvanb",
       "fullName": "Nguyễn Văn B",
       "email": "nguyenvanb@gmail.com",
       "position": "Tester",
-      "type": "STAFF", // INTERNSHIP, STAFF, COLLABORATOR
-      "avatar": "https://example.com/avatar.jpg" // Tùy chọn
+      "type": "STAFF",
+      "avatar": "https://example.com/avatar.jpg",
+      "teamId": 1
     }
     ```
+    > **Ghi chú trường `username`**: Bắt buộc. 3–50 ký tự, chỉ gồm chữ cái, số, dấu gạch dưới (`_`) và dấu chấm (`.`).
+    > **Ghi chú trường `type`**: `INTERNSHIP` | `STAFF` | `COLLABORATOR`.
+    > **Ghi chú trường `teamId`**: Tùy chọn. ID số của Team cần gán cho user.
+
 *   **Response (201 Created)**:
     ```json
     {
@@ -237,6 +270,16 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "position": "Tester",
       "type": "STAFF",
       "status": "ACTIVE",
+      "lockReason": null,
+      "department": null,
+      "managerId": null,
+      "teamId": 1,
+      "lastLoginAt": null,
+      "createdAt": "2026-05-30T10:00:00",
+      "updatedAt": "2026-05-30T10:00:00",
+      "lockedUntil": null,
+      "isDeleted": false,
+      "deletedAt": null,
       "roles": []
     }
     ```
@@ -244,54 +287,66 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 2.3 Xem chi tiết người dùng
 *   **Method**: `GET`
 *   **URL**: `/users/{id}`
-*   **Response (200 OK)**: Trả về thông tin chi tiết của User có ID tương ứng (giống cấu trúc object user đơn lẻ).
+*   **Quyền hạn**: Role `ADMIN` **hoặc** chính User đó (tự xem thông tin của mình).
+*   **Response (200 OK)**: Trả về thông tin chi tiết của User có ID tương ứng (cấu trúc giống object user ở 2.2).
 
 ### 2.4 Cập nhật thông tin người dùng
 *   **Method**: `PUT`
 *   **URL**: `/users/{id}`
+*   **Quyền hạn**: Role `ADMIN` **hoặc** chính User đó (tự cập nhật thông tin của mình).
 *   **Body (JSON)** (Các trường đều là tùy chọn):
     ```json
     {
       "fullName": "Tên Mới",
       "position": "Vị trí mới",
-      "type": "STAFF", // INTERNSHIP, STAFF, COLLABORATOR
+      "type": "STAFF",
       "avatar": "https://link.com/new.jpg",
-      "status": "ACTIVE", // ACTIVE, LOCKED, INACTIVE
-      "lockedUntil": null
+      "status": "ACTIVE",
+      "lockedUntil": null,
+      "teamId": 2
     }
     ```
+    > **Ghi chú trường `status`**: `ACTIVE` | `LOCKED` | `INACTIVE`.
+    > **Ghi chú trường `teamId`**: Tùy chọn. ID số của Team mới cần gán.
+
 *   **Response (200 OK)**: Trả về thông tin User sau khi cập nhật.
 
 ### 2.5 Xóa người dùng (Soft Delete)
 *   **Method**: `DELETE`
 *   **URL**: `/users/{id}`
+*   **Quyền hạn**: Role `ADMIN`
+*   **Lưu ý**: Admin không thể tự xóa tài khoản của chính mình.
 *   **Response (200 OK)**:
     ```json
     {
       "success": true,
-      "message": "User deleted successfully"
+      "message": "User successfully marked as deleted."
     }
     ```
 
 ### 2.6 Khóa tài khoản người dùng (Lock User)
 *   **Method**: `PUT`
 *   **URL**: `/users/{id}/lock`
+*   **Quyền hạn**: Role `ADMIN`
+*   **Lưu ý**: Admin không thể tự khóa tài khoản của chính mình.
 *   **Body (JSON)** (Tùy chọn lý do khóa):
     ```json
     {
       "reason": "Vi phạm quy định của hệ thống"
     }
     ```
-*   **Response (200 OK)**: Trả về thông tin User đã bị khóa (thuộc tính `isActive` thành `false`, `status` thành `LOCKED`).
+*   **Response (200 OK)**: Trả về thông tin User đã bị khóa (`isActive` thành `false`, `status` thành `LOCKED`).
 
 ### 2.7 Mở khóa tài khoản người dùng (Unlock User)
 *   **Method**: `PUT`
 *   **URL**: `/users/{id}/unlock`
-*   **Response (200 OK)**: Trả về thông tin User sau khi mở khóa (`isActive` thành `true`, `status` thành `ACTIVE`).
+*   **Quyền hạn**: Role `ADMIN`
+*   **Response (200 OK)**: Trả về thông tin User sau khi mở khóa (`isActive` thành `true`, `status` thành `ACTIVE`, `failedAttempt` reset về `0`).
 
 ### 2.8 Gán Role cho người dùng
 *   **Method**: `POST`
 *   **URL**: `/users/{id}/roles`
+*   **Quyền hạn**: Role `ADMIN`
 *   **Body (JSON)**:
     ```json
     {
@@ -303,6 +358,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 2.9 Xem danh sách các Role của một người dùng
 *   **Method**: `GET`
 *   **URL**: `/users/{id}/roles`
+*   **Quyền hạn**: Role `ADMIN` **hoặc** chính User đó.
 *   **Response (200 OK)**:
     ```json
     [
@@ -318,6 +374,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 2.10 Gỡ bỏ Role khỏi người dùng
 *   **Method**: `DELETE`
 *   **URL**: `/users/{id}/roles/{roleId}`
+*   **Quyền hạn**: Role `ADMIN`
 *   **Response (204 No Content)**: Trả về thành công và không có body.
 
 ---
@@ -433,13 +490,12 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       },
       {
         "id": 2,
-        "resource": "task",
+        "resource": "kpi/task",
         "action": "update",
         "description": "Update task"
       }
     ]
     ```
-
 
 ---
 
@@ -450,6 +506,9 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `POST`
 *   **URL**: `/tasks`
 *   **Quyền hạn**: Authority `KPI/TASK:CREATE` hoặc role `ADMIN`
+*   **Ràng buộc**:
+    *   Người tạo Task (Manager) và người được giao (Assignee) phải thuộc **cùng một Team** (`team.id` phải giống nhau). Vi phạm sẽ trả về lỗi `400`.
+    *   `deadline` phải là thời gian **trong tương lai**.
 *   **Body (JSON)**:
     ```json
     {
@@ -457,9 +516,11 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
       "assigneeId": 3,
       "deadline": "2026-06-15T18:00:00",
-      "priority": "HIGH" // LOW, MEDIUM, HIGH
+      "priority": "HIGH"
     }
     ```
+    > **Ghi chú trường `priority`**: `LOW` | `MEDIUM` | `HIGH`. Mặc định là `null` nếu không truyền.
+
 *   **Response (201 Created)**:
     ```json
     {
@@ -467,11 +528,11 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "title": "Hoàn thiện thiết kế Database module KPI",
       "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
       "managerId": 2,
-      "managerName": "Manager User",
+      "managerName": "IT Manager",
       "assigneeId": 3,
-      "assigneeName": "Nguyễn Văn B",
+      "assigneeName": "IT Staff",
       "deadline": "2026-06-15T18:00:00",
-      "status": "ASSIGNED", // ASSIGNED, IN_PROGRESS, PENDING_REVIEW, COMPLETED, OVERDUE
+      "status": "ASSIGNED",
       "priority": "HIGH",
       "progress": 0,
       "tags": null,
@@ -480,11 +541,16 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "updatedAt": "2026-05-30T10:00:00"
     }
     ```
+    > **Ghi chú trường `status`**: `ASSIGNED` | `IN_PROGRESS` | `PENDING_REVIEW` | `COMPLETED` | `OVERDUE`.
 
 ### 4.2 Xem chi tiết một Task (Get Task by ID)
 *   **Method**: `GET`
 *   **URL**: `/tasks/{id}`
 *   **Quyền hạn**: Authority `KPI/TASK:VIEW` hoặc role `ADMIN`
+*   **Ràng buộc phân quyền**:
+    *   **ADMIN**: xem mọi task.
+    *   **MANAGER**: chỉ xem task do mình tạo, hoặc task của nhân viên cùng phòng ban / được quản lý trực tiếp.
+    *   **STAFF**: chỉ xem task mà họ là assignee.
 *   **Response (200 OK)**:
     ```json
     {
@@ -492,9 +558,9 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "title": "Hoàn thiện thiết kế Database module KPI",
       "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
       "managerId": 2,
-      "managerName": "Manager User",
+      "managerName": "IT Manager",
       "assigneeId": 3,
-      "assigneeName": "Nguyễn Văn B",
+      "assigneeName": "IT Staff",
       "deadline": "2026-06-15T18:00:00",
       "status": "IN_PROGRESS",
       "priority": "HIGH",
@@ -510,6 +576,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `GET`
 *   **URL**: `/tasks`
 *   **Quyền hạn**: Authority `KPI/TASK:VIEW` hoặc role `ADMIN`
+*   **Ràng buộc phân quyền**: Giống API 4.2 (ADMIN thấy tất, MANAGER thấy trong phòng ban, STAFF chỉ thấy task của mình).
 *   **Query Parameters (Tùy chọn)**:
     *   `page`: Số trang, mặc định là `1`
     *   `limit`: Số bản ghi mỗi trang, mặc định là `20`
@@ -517,7 +584,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     *   `status`: Lọc theo trạng thái (`ASSIGNED`, `IN_PROGRESS`, `PENDING_REVIEW`, `COMPLETED`, `OVERDUE`)
     *   `priority`: Lọc theo độ ưu tiên (`LOW`, `MEDIUM`, `HIGH`)
     *   `assigneeId`: Lọc theo ID nhân viên được giao việc
-    *   `teamId`: Lọc theo mã phòng ban/team
+    *   `teamId`: Lọc theo department code của team
 *   **Response (200 OK)**:
     ```json
     {
@@ -527,9 +594,9 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "title": "Hoàn thiện thiết kế Database module KPI",
           "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
           "managerId": 2,
-          "managerName": "Manager User",
+          "managerName": "IT Manager",
           "assigneeId": 3,
-          "assigneeName": "Nguyễn Văn B",
+          "assigneeName": "IT Staff",
           "deadline": "2026-06-15T18:00:00",
           "status": "IN_PROGRESS",
           "priority": "HIGH",
@@ -553,11 +620,15 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `PATCH`
 *   **URL**: `/tasks/{id}/complete`
 *   **Quyền hạn**: Authority `KPI/TASK:APPROVE` hoặc role `ADMIN`
+*   **Ràng buộc**:
+    *   Chỉ **người tạo Task** (`managerId`) mới có quyền phê duyệt.
+    *   Task phải ở trạng thái **`PENDING_REVIEW`** mới có thể phê duyệt.
+    *   Khi phê duyệt thành công: `status` → `COMPLETED`, `progress` → `100`.
 *   **Response (200 OK)**:
     ```json
     {
       "success": true,
-      "message": "Task completed successfully"
+      "message": "Task successfully approved and completed"
     }
     ```
 
@@ -565,6 +636,10 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `PATCH`
 *   **URL**: `/tasks/{id}/reject`
 *   **Quyền hạn**: Authority `KPI/TASK:REJECT` hoặc role `ADMIN`
+*   **Ràng buộc**:
+    *   Chỉ **người tạo Task** (`managerId`) mới có quyền từ chối.
+    *   Task phải ở trạng thái **`PENDING_REVIEW`** mới có thể từ chối.
+    *   Khi từ chối: `status` → `IN_PROGRESS` (tiến độ giữ nguyên).
 *   **Body (JSON)**:
     ```json
     {
@@ -575,7 +650,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     ```json
     {
       "success": true,
-      "message": "Task rejected successfully"
+      "message": "Task successfully rejected"
     }
     ```
 
@@ -583,6 +658,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `PUT`
 *   **URL**: `/tasks/{id}`
 *   **Quyền hạn**: Authority `KPI/TASK:UPDATE` hoặc role `ADMIN`
+*   **Ràng buộc**: Chỉ **người tạo Task** (`managerId`) hoặc **ADMIN** mới có thể sửa.
 *   **Body (JSON)** (Các trường đều là tùy chọn):
     ```json
     {
@@ -601,9 +677,9 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "title": "Thiết kế Database module KPI nâng cao",
       "description": "Bổ sung trường rating và tính toán điểm tổng hợp.",
       "managerId": 2,
-      "managerName": "Manager User",
+      "managerName": "IT Manager",
       "assigneeId": 3,
-      "assigneeName": "Nguyễn Văn B",
+      "assigneeName": "IT Staff",
       "deadline": "2026-06-20T18:00:00",
       "status": "IN_PROGRESS",
       "priority": "HIGH",
@@ -619,11 +695,12 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `DELETE`
 *   **URL**: `/tasks/{id}`
 *   **Quyền hạn**: Authority `KPI/TASK:DELETE` hoặc role `ADMIN`
+*   **Ràng buộc**: Chỉ **người tạo Task** (`managerId`) hoặc **ADMIN** mới có thể xóa.
 *   **Response (200 OK)**:
     ```json
     {
       "success": true,
-      "message": "Task deleted successfully"
+      "message": "Task successfully marked as deleted."
     }
     ```
 
@@ -631,27 +708,31 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `GET`
 *   **URL**: `/tasks/summary`
 *   **Quyền hạn**: Authority `KPI/TASK:VIEW_SUMMARY` hoặc role `ADMIN`
-*   **Mô tả**: Trả về thống kê số lượng các Task của người dùng hiện tại theo các trạng thái khác nhau.
+*   **Ràng buộc phân quyền**: ADMIN thấy toàn bộ hệ thống, MANAGER thấy trong phòng ban, STAFF chỉ thấy task của mình.
 *   **Response (200 OK)**:
     ```json
     {
-      "ASSIGNED": 3,
-      "IN_PROGRESS": 5,
-      "PENDING_REVIEW": 2,
-      "COMPLETED": 12,
-      "OVERDUE": 1
+      "assigned": 3,
+      "inProgress": 5,
+      "pendingReview": 2,
+      "completed": 12,
+      "overdue": 1
     }
     ```
 
 ### 4.9 Cập nhật tiến độ & trạng thái Task (Update Task Progress)
 *   **Method**: `PATCH`
 *   **URL**: `/tasks/{id}/progress`
-*   **Quyền hạn**: Authority `KPI/TASK:UPDATE_PROGRESS` hoặc role `ADMIN` (Thường dành cho nhân viên tự cập nhật tiến độ công việc của mình)
+*   **Quyền hạn**: Authority `KPI/TASK:UPDATE_PROGRESS` hoặc role `ADMIN`
+*   **Ràng buộc**:
+    *   Chỉ **người được giao Task** (`assigneeId`) mới có thể cập nhật tiến độ.
+    *   Trường `status` trong body **bắt buộc phải là `"IN_PROGRESS"`**.
+    *   Trường `progress` phải nằm trong khoảng **0 đến 99** (không thể đặt 100 qua API này — dùng Submit để hoàn thành).
 *   **Body (JSON)**:
     ```json
     {
-      "status": "IN_PROGRESS", // ASSIGNED, IN_PROGRESS, PENDING_REVIEW, COMPLETED, OVERDUE
-      "progress": 75 // Điểm phần trăm từ 0 đến 100
+      "status": "IN_PROGRESS",
+      "progress": 75
     }
     ```
 *   **Response (200 OK)**:
@@ -661,9 +742,9 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "title": "Thiết kế Database module KPI nâng cao",
       "description": "Bổ sung trường rating và tính toán điểm tổng hợp.",
       "managerId": 2,
-      "managerName": "Manager User",
+      "managerName": "IT Manager",
       "assigneeId": 3,
-      "assigneeName": "Nguyễn Văn B",
+      "assigneeName": "IT Staff",
       "deadline": "2026-06-20T18:00:00",
       "status": "IN_PROGRESS",
       "priority": "HIGH",
@@ -678,18 +759,140 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.10 Nộp báo cáo hoàn thành Task (Submit Task)
 *   **Method**: `POST`
 *   **URL**: `/tasks/{id}/submit`
-*   **Quyền hạn**: Authority `KPI/TASK:SUBMIT` hoặc role `ADMIN` (Dành cho nhân viên báo cáo đã xong việc và gửi minh chứng)
+*   **Quyền hạn**: Authority `KPI/TASK:SUBMIT` hoặc role `ADMIN`
+*   **Ràng buộc**:
+    *   Chỉ **người được giao Task** (`assigneeId`) mới có thể nộp.
+    *   Khi nộp thành công: `progress` → `100`, `status` → `PENDING_REVIEW`.
 *   **Body (JSON)** (Tùy chọn):
     ```json
     {
-      "evidence": "https://github.com/hvduong/kpi-repo/pull/12" // Link báo cáo hoặc link PR, Drive
+      "evidence": "https://github.com/hvduong/kpi-repo/pull/12"
     }
     ```
 *   **Response (200 OK)**:
     ```json
     {
       "success": true,
-      "message": "Task submitted successfully"
+      "message": "Task submitted successfully."
+    }
+    ```
+
+### 4.11 Lấy danh sách Task nội bộ Team (Get Team Tasks)
+*   **Method**: `GET`
+*   **URL**: `/tasks/team/{teamId}`
+*   **Quyền hạn**: Authority `KPI/TASK:VIEW` hoặc role `ADMIN`
+*   **Ràng buộc phân quyền**: Chỉ ADMIN, Trưởng phòng (Leader) của team đó, hoặc các nhân viên thuộc team đó mới được quyền truy cập. Các trường hợp truy cập chéo phòng ban khác sẽ bị từ chối với lỗi `403 Forbidden`.
+*   **Query Parameters (Tùy chọn)**:
+    *   `page`: Số trang, mặc định là `1`
+    *   `limit`: Số bản ghi mỗi trang, mặc định là `20`
+    *   `status`: Lọc theo trạng thái của Task (`ASSIGNED`, `IN_PROGRESS`, `PENDING_REVIEW`, `COMPLETED`, `OVERDUE`)
+*   **Response (200 OK)**:
+    ```json
+    {
+      "data": [
+        {
+          "id": 10,
+          "title": "Hoàn thiện thiết kế Database module KPI",
+          "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
+          "managerId": 2,
+          "managerName": "IT Manager",
+          "assigneeId": 3,
+          "assigneeName": "IT Staff",
+          "deadline": "2026-06-15T18:00:00",
+          "status": "IN_PROGRESS",
+          "priority": "HIGH",
+          "progress": 30,
+          "tags": ["Database", "KPI"],
+          "evidence": null,
+          "createdAt": "2026-05-30T10:00:00",
+          "updatedAt": "2026-05-30T11:30:00"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "totalElements": 1,
+        "totalPages": 1
+      }
+    }
+    ```
+
+### 4.12 Xóa nhanh toàn bộ Task của Team (Bulk Soft Delete Team Tasks)
+*   **Method**: `DELETE`
+*   **URL**: `/tasks/team/{teamId}`
+*   **Quyền hạn**: Authority `KPI/TASK:DELETE` hoặc role `ADMIN`
+*   **Ràng buộc**: Chỉ ADMIN hoặc LEADER của team đó mới được quyền xóa. Thực hiện chuyển toàn bộ task đang hoạt động (`isDeleted = false`) của team này sang trạng thái xóa mềm (`isDeleted = true`).
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "All team tasks successfully marked as deleted."
+    }
+    ```
+
+### 4.13 Khôi phục Task đã xóa mềm (Restore Task)
+*   **Method**: `PATCH`
+*   **URL**: `/tasks/{id}/restore`
+*   **Quyền hạn**: Authority `KPI/TASK:UPDATE` hoặc role `ADMIN`
+*   **Ràng buộc**: Chỉ cho phép khôi phục Task đang có `isDeleted = true`. Người thực hiện phải là ADMIN, Team Leader, Task Creator, hoặc Task Assignee.
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task successfully restored."
+    }
+    ```
+
+### 4.14 Xóa cứng Task (Permanent Delete Task)
+*   **Method**: `DELETE`
+*   **URL**: `/tasks/{id}/permanent`
+*   **Quyền hạn**: Authority `KPI/TASK:DELETE` hoặc role `ADMIN`
+*   **Ràng buộc**: Chỉ ADMIN hoặc Team Leader của task đó mới có quyền thực hiện. Task bắt buộc phải đang có trạng thái xóa mềm (`isDeleted = true`) trước. Hệ thống sẽ tự động dọn dẹp sạch sẽ lịch sử thay đổi (`TaskHistory`) và thông tin gia hạn (`TaskExtension`) trước khi xóa vĩnh viễn Task khỏi CSDL.
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Task permanently deleted."
+    }
+    ```
+
+### 4.15 Lấy danh sách Task trong thùng rác (Get Trash Tasks)
+*   **Method**: `GET`
+*   **URL**: `/tasks/trash`
+*   **Quyền hạn**: Authority `KPI/TASK:VIEW` hoặc role `ADMIN`
+*   **Ràng buộc phân quyền**: Chỉ ADMIN hoặc LEADER mới được gọi. LEADER chỉ được xem các task đã xóa của team do mình quản lý.
+*   **Query Parameters (Tùy chọn)**:
+    *   `teamId`: Lọc theo ID của team (Bắt buộc đối với LEADER; đối với ADMIN có thể để trống để xem toàn bộ hệ thống).
+    *   `page`: Số trang, mặc định là `1`
+    *   `limit`: Số bản ghi mỗi trang, mặc định là `20`
+*   **Response (200 OK)**:
+    ```json
+    {
+      "data": [
+        {
+          "id": 10,
+          "title": "Hoàn thiện thiết kế Database module KPI",
+          "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
+          "managerId": 2,
+          "managerName": "IT Manager",
+          "assigneeId": 3,
+          "assigneeName": "IT Staff",
+          "deadline": "2026-06-15T18:00:00",
+          "status": "IN_PROGRESS",
+          "priority": "HIGH",
+          "progress": 30,
+          "tags": ["Database", "KPI"],
+          "evidence": null,
+          "createdAt": "2026-05-30T10:00:00",
+          "updatedAt": "2026-05-30T11:30:00"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "totalElements": 1,
+        "totalPages": 1
+      }
     }
     ```
 
@@ -700,7 +903,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 5.1 Gửi yêu cầu gia hạn Task (Request Task Extension)
 *   **Method**: `POST`
 *   **URL**: `/tasks/{id}/extension`
-*   **Quyền hạn**: Authority `KPI/TASK:EXTEND` hoặc role `ADMIN` (Nhân viên xin gia hạn deadline của Task)
+*   **Quyền hạn**: Authority `KPI/TASK:EXTEND` hoặc role `ADMIN`
 *   **Body (JSON)**:
     ```json
     {
@@ -719,14 +922,16 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 5.2 Phê duyệt/Bác bỏ yêu cầu gia hạn (Approve/Reject Task Extension)
 *   **Method**: `PATCH`
 *   **URL**: `/tasks/{id}/extension/approve`
-*   **Quyền hạn**: Authority `KPI/TASK:APPROVE_EXTENSION` hoặc role `ADMIN` (Quản lý duyệt/bác bỏ yêu cầu xin gia hạn của nhân viên)
+*   **Quyền hạn**: Authority `KPI/TASK:APPROVE_EXTENSION` hoặc role `ADMIN`
 *   **Body (JSON)**:
     ```json
     {
-      "approved": true, // true để chấp nhận đổi deadline, false để bác bỏ
+      "approved": true,
       "managerNote": "Đồng ý gia hạn thêm 5 ngày để hoàn thiện kiểm thử."
     }
     ```
+    > **Ghi chú**: `approved = true` để chấp nhận đổi deadline, `approved = false` để bác bỏ.
+
 *   **Response (200 OK)**:
     ```json
     {
@@ -742,6 +947,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 6.1 Xem lịch sử thay đổi của Task (Get Task History)
 *   **Method**: `GET`
 *   **URL**: `/tasks/{id}/history`
+*   **Quyền hạn**: Chỉ cần đã đăng nhập (không yêu cầu quyền đặc biệt).
 *   **Mô tả**: Trả về toàn bộ nhật ký thay đổi trạng thái, tiến độ và ghi chú tương ứng của một Task.
 *   **Response (200 OK)**:
     ```json
@@ -749,15 +955,15 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       {
         "status": "IN_PROGRESS",
         "progress": 75,
-        "changedByName": "Nguyễn Văn B",
-        "note": "Cập nhật tiến độ lên 75%",
+        "changedByName": "IT Staff",
+        "note": "Task progress updated to 75%",
         "createdAt": "2026-05-30T13:00:00"
       },
       {
         "status": "PENDING_REVIEW",
         "progress": 100,
-        "changedByName": "Nguyễn Văn B",
-        "note": "Nộp báo cáo hoàn thành công việc. Minh chứng: https://github.com/hvduong/kpi-repo/pull/12",
+        "changedByName": "IT Staff",
+        "note": "Task submitted for review",
         "createdAt": "2026-05-30T14:30:00"
       }
     ]
@@ -771,16 +977,20 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 7.1 Lấy thông tin điểm KPI cá nhân (Get User KPI)
 *   **Method**: `GET`
 *   **URL**: `/kpi/user/{userId}`
-*   **Quyền hạn**: Authority `KPI:VIEW_SELF` (đối với cá nhân), `KPI:VIEW_TEAM` (đối với MANAGER xem phòng ban), hoặc role `ADMIN`
+*   **Quyền hạn**: Authority `KPI:VIEW_SELF` (xem của bản thân), `KPI:VIEW_TEAM` (MANAGER xem nhân viên trong team), hoặc role `ADMIN`
+*   **Ràng buộc phân quyền**:
+    *   **STAFF**: chỉ xem KPI của chính mình.
+    *   **MANAGER**: xem KPI của bản thân, nhân viên cùng phòng ban, hoặc nhân viên được quản lý trực tiếp (`managerId`).
+    *   **ADMIN**: xem bất kỳ.
 *   **Query Parameters (Tùy chọn)**:
-    *   `year`: Năm cần lấy điểm số, mặc định là năm hiện tại.
+    *   `year`: Năm cần lấy điểm số. Mặc định là năm hiện tại.
 *   **Response (200 OK)**:
     ```json
     {
       "userId": 3,
-      "username": "nguyenvanb",
-      "displayName": "Nguyễn Văn B",
-      "department": "Tech",
+      "username": "staff",
+      "displayName": "IT Staff",
+      "department": "IT",
       "year": 2026,
       "monthlyScores": [
         {
@@ -788,46 +998,52 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "userId": 3,
           "month": 5,
           "year": 2026,
-          "taskCompletionRate": 0.85, // Tỷ lệ hoàn thành công việc (85%)
-          "reviewScore": 8.0, // Điểm đánh giá từ Manager
-          "finalScore": 8.3, // Điểm tổng hợp (Công thức: taskRate * 10 * W1 + reviewScore * W2)
-          "rating": "EXCELLENT", // Phân loại xếp hạng
+          "taskCompletionRate": 85.0,
+          "reviewScore": 8.5,
+          "finalScore": 8.5,
+          "rating": "EXCELLENT",
           "createdAt": "2026-05-30T01:00:00",
           "updatedAt": "2026-05-30T21:00:00"
         }
       ]
     }
     ```
+    > **Ghi chú `taskCompletionRate`**: Giá trị là **phần trăm (0.0 – 100.0%)**, không phải tỷ lệ (0–1).
+    > **Ghi chú `finalScore`**: Điểm tổng hợp = `(taskCompletionRate / 10) × taskWeight + reviewScore × reviewWeight`.
+    > **Ghi chú `rating`**: `POOR` | `AVERAGE` | `GOOD` | `EXCELLENT`.
 
 ### 7.2 Lấy thông tin điểm KPI của phòng ban (Get Team KPI)
 *   **Method**: `GET`
 *   **URL**: `/kpi/team/{teamId}`
 *   **Quyền hạn**: Authority `KPI:VIEW_TEAM` hoặc role `ADMIN`
+*   **Ràng buộc**:
+    *   `{teamId}` là **ID số (Long)** của Team trong bảng `teams`. Không phải tên hay code.
+    *   Chỉ **ADMIN** hoặc **Trưởng phòng chính xác của team đó** mới có thể truy cập. Vi phạm trả về `403`.
 *   **Query Parameters (Tùy chọn)**:
-    *   `month`: Tháng cần lấy điểm (1 - 12)
-    *   `year`: Năm cần lấy điểm
+    *   `month`: Tháng cần lấy điểm (1 - 12). Mặc định là tháng hiện tại.
+    *   `year`: Năm cần lấy điểm. Mặc định là năm hiện tại.
 *   **Response (200 OK)**:
     ```json
     {
-      "teamId": "Tech",
-      "averageScore": 7.95, // Điểm KPI trung bình của toàn bộ thành viên trong Team
+      "teamId": "1",
+      "averageScore": 7.95,
       "members": [
         {
           "userId": 3,
-          "username": "nguyenvanb",
-          "displayName": "Nguyễn Văn B",
-          "taskCompletionRate": 0.85,
-          "reviewScore": 8.0,
-          "finalScore": 8.3,
+          "username": "staff",
+          "displayName": "IT Staff",
+          "taskCompletionRate": 85.0,
+          "reviewScore": 8.5,
+          "finalScore": 8.5,
           "rating": "EXCELLENT"
         },
         {
           "userId": 4,
           "username": "tranvanc",
           "displayName": "Trần Văn C",
-          "taskCompletionRate": 0.70,
-          "reviewScore": 8.0,
-          "finalScore": 7.6,
+          "taskCompletionRate": 70.0,
+          "reviewScore": 7.0,
+          "finalScore": 7.0,
           "rating": "GOOD"
         }
       ]
@@ -843,7 +1059,8 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **URL**: `/kpi/reviews`
 *   **Quyền hạn**: Authority `KPI/REVIEW:CREATE` hoặc role `ADMIN`
 *   **Ràng buộc**:
-    *   `reviewScore` bắt buộc nằm trong khoảng từ `1.0` đến `10.0`.
+    *   `reviewScore` bắt buộc nằm trong khoảng từ `1.0` đến `10.0` (số nguyên hoặc thập phân).
+    *   `feedback` là **bắt buộc**, tối đa 1000 ký tự.
     *   Tự động tính toán lại điểm KPI tổng hợp của nhân viên ngay lập tức sau khi chấm điểm.
 *   **Body (JSON)**:
     ```json
@@ -876,8 +1093,10 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **URL**: `/kpi/reviews/{id}`
 *   **Quyền hạn**: Authority `KPI/REVIEW:UPDATE` hoặc role `ADMIN`
 *   **Ràng buộc**:
-    *   Không cho phép cập nhật nếu bản ghi đánh giá đã bị khóa (ví dụ: đã quá thời gian phúc khảo hoặc đã chốt).
-    *   Tự động tính toán lại điểm KPI tổng hợp của nhân viên ngay lập tức sau khi cập nhật.
+    *   Không cho phép cập nhật nếu bản ghi đánh giá đã bị khóa (`isLocked = true`).
+    *   `reviewScore` bắt buộc, khoảng `1.0` đến `10.0`.
+    *   `feedback` là **bắt buộc**, tối đa 1000 ký tự.
+    *   Tự động tính toán lại điểm KPI tổng hợp ngay lập tức.
 *   **Body (JSON)**:
     ```json
     {
@@ -905,13 +1124,13 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `DELETE`
 *   **URL**: `/kpi/reviews/{id}`
 *   **Quyền hạn**: Authority `KPI/REVIEW:DELETE` hoặc role `ADMIN`
-*   **Ràng buộc**:
-    *   Tự động recalculate lại điểm tổng hợp của nhân viên về trạng thái không có điểm review (reviewScore = 0.0) ngay lập tức.
+*   **Ràng buộc**: Tự động recalculate lại điểm tổng hợp của nhân viên về trạng thái không có điểm review (`reviewScore = 0.0`) ngay lập tức.
 *   **Response (204 No Content)**: Trả về thành công và không có body.
 
 ### 8.4 Lấy lịch sử đánh giá 12 tháng gần nhất (Get KPI Review History)
 *   **Method**: `GET`
 *   **URL**: `/kpi/reviews/history/{userId}`
+*   **Quyền hạn**: Chỉ cần đã đăng nhập.
 *   **Mô tả**: Xem lịch sử nhận xét đánh giá 12 tháng gần nhất của một nhân viên.
 *   **Response (200 OK)**:
     ```json
@@ -939,6 +1158,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `POST`
 *   **URL**: `/kpi/appeals`
 *   **Quyền hạn**: Authority `KPI/APPEAL:CREATE` hoặc role `ADMIN`
+*   **Ràng buộc**: Cả `reason` và `evidenceLink` đều **bắt buộc** (không thể bỏ trống).
 *   **Body (JSON)**:
     ```json
     {
@@ -952,31 +1172,33 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     {
       "id": 1,
       "userId": 3,
-      "complainantUsername": "nguyenvanb",
-      "complainantDisplayName": "Nguyễn Văn B",
+      "complainantUsername": "staff",
+      "complainantDisplayName": "IT Staff",
       "kpiReviewId": 5,
       "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
       "evidenceLink": "https://drive.google.com/file/d/evidence-link",
-      "status": "PENDING", // PENDING, APPROVED, REJECTED
+      "status": "PENDING",
       "resolvedBy": null,
       "resolutionComment": null,
       "createdAt": "2026-05-30T21:10:00",
       "updatedAt": "2026-05-30T21:10:00"
     }
     ```
+    > **Ghi chú `status`**: `PENDING` | `APPROVED` | `REJECTED`.
 
 ### 9.2 Xem danh sách các đơn khiếu nại đang chờ xử lý (Get Pending KPI Appeals)
 *   **Method**: `GET`
 *   **URL**: `/kpi/appeals/team`
-*   **Quyền hạn**: Authority `KPI/APPEAL:RESOLVE` hoặc role `ADMIN` (MANAGER chỉ xem danh sách đơn đang chờ duyệt của team mình quản lý, ADMIN xem toàn bộ các đơn pending trong hệ thống)
+*   **Quyền hạn**: Authority `KPI/APPEAL:RESOLVE` hoặc role `ADMIN`
+*   **Mô tả**: MANAGER chỉ xem danh sách đơn đang chờ duyệt của team mình quản lý, ADMIN xem toàn bộ các đơn `PENDING` trong hệ thống.
 *   **Response (200 OK)**:
     ```json
     [
       {
         "id": 1,
         "userId": 3,
-        "complainantUsername": "nguyenvanb",
-        "complainantDisplayName": "Nguyễn Văn B",
+        "complainantUsername": "staff",
+        "complainantDisplayName": "IT Staff",
         "kpiReviewId": 5,
         "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
         "evidenceLink": "https://drive.google.com/file/d/evidence-link",
@@ -993,23 +1215,26 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `PATCH`
 *   **URL**: `/kpi/appeals/{id}/resolve`
 *   **Quyền hạn**: Authority `KPI/APPEAL:RESOLVE` hoặc role `ADMIN`
-*   **Lưu ý**:
-    *   Nếu chọn trạng thái là `APPROVED` (chấp nhận phúc khảo), hệ thống sẽ cập nhật trạng thái đơn và đồng thời cập nhật lại điểm tại module Review (kèm theo việc tự động tính toán lại điểm tổng hợp của nhân viên).
-    *   Nếu chọn trạng thái là `REJECTED`, đơn khiếu nại sẽ bị bác bỏ.
+*   **Ràng buộc**:
+    *   `resolutionComment` là **bắt buộc**, tối đa 1000 ký tự.
+    *   Nếu `status = APPROVED`: hệ thống cập nhật trạng thái đơn và tự động tính toán lại điểm KPI tổng hợp của nhân viên.
+    *   Nếu `status = REJECTED`: đơn khiếu nại bị bác bỏ, không thay đổi điểm.
 *   **Body (JSON)**:
     ```json
     {
-      "status": "APPROVED", // APPROVED hoặc REJECTED
+      "status": "APPROVED",
       "resolutionComment": "Đồng ý hỗ trợ cập nhật lại điểm sau khi đối chiếu minh chứng."
     }
     ```
+    > **Ghi chú `status`**: `APPROVED` | `REJECTED`.
+
 *   **Response (200 OK)**:
     ```json
     {
       "id": 1,
       "userId": 3,
-      "complainantUsername": "nguyenvanb",
-      "complainantDisplayName": "Nguyễn Văn B",
+      "complainantUsername": "staff",
+      "complainantDisplayName": "IT Staff",
       "kpiReviewId": 5,
       "reason": "Tôi đã hoàn thành vượt tiến độ 2 task quan trọng nhưng điểm review chỉ được 6.",
       "evidenceLink": "https://drive.google.com/file/d/evidence-link",
@@ -1028,7 +1253,8 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 10.1 Lấy thông tin cấu hình trọng số hiện tại (Get KPI Weights)
 *   **Method**: `GET`
 *   **URL**: `/kpi/weights`
-*   **Mô tả**: Trả về trọng số tính điểm KPI hiện tại của hệ thống cho tỷ trọng hoàn thành công việc (`taskWeight` - $W_1$) và điểm đánh giá hiệu suất của quản lý (`reviewWeight` - $W_2$). Mặc định ban đầu là `0.6` và `0.4`.
+*   **Quyền hạn**: Chỉ cần đã đăng nhập.
+*   **Mô tả**: Trả về trọng số tính điểm KPI hiện tại. Mặc định ban đầu: `taskWeight = 0.6`, `reviewWeight = 0.4`.
 *   **Response (200 OK)**:
     ```json
     {
@@ -1042,8 +1268,8 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **URL**: `/kpi/weights`
 *   **Quyền hạn**: Authority `KPI/WEIGHT:UPDATE` hoặc role `ADMIN`
 *   **Ràng buộc**:
-    *   Cả hai trường trọng số bắt buộc nằm trong khoảng từ `0.0` đến `1.0`.
-    *   Tổng giá trị của `taskWeight` + `reviewWeight` truyền lên phải luôn bằng đúng `1.0`.
+    *   Cả hai trường bắt buộc nằm trong khoảng từ `0.0` đến `1.0`.
+    *   Tổng `taskWeight + reviewWeight` phải bằng đúng `1.0`.
 *   **Body (JSON)**:
     ```json
     {
@@ -1066,21 +1292,23 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 11.1 Xuất dữ liệu bảng điểm KPI tổng hợp ra file Excel (Export KPI Report)
 *   **Method**: `GET`
 *   **URL**: `/kpi/export`
-*   **Quyền hạn**: Authority `KPI/REPORT:EXPORT` hoặc role `ADMIN` (Lưu ý: MANAGER cần thuộc phòng ban nhân sự (ví dụ: `department = 'HR'`) mới được xuất).
-*   **Query Parameters (Bắt buộc)**:
-    *   `month`: Tháng xuất báo cáo (1 - 12)
-    *   `year`: Năm xuất báo cáo (2020 - 2100)
-    *   `department` (Tùy chọn): Lọc xuất báo cáo riêng cho một phòng ban cụ thể. Nếu không truyền sẽ xuất báo cáo của toàn bộ công ty.
-*   **Response (200 OK)**: File Excel binary (Content-Type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`). Tên tệp tin tải về có định dạng động: `Bao_cao_KPI_Thang_<month>_Nam_<year>.xlsx`.
-*   **Định dạng file Excel xuất ra**:
-    *   Header nổi bật với màu nền xanh (Blue Fill), chữ đậm màu trắng.
-    *   Tự động căn chỉnh độ rộng cột phù hợp với dữ liệu.
-    *   Các cột thông tin bao gồm: STT, Mã nhân viên (ID), Họ và Tên, Phòng ban, Tỷ lệ hoàn thành Task (%), Điểm đánh giá Review, Điểm KPI tổng hợp, Xếp loại KPI.
+*   **Quyền hạn**: Authority `KPI/REPORT:EXPORT` hoặc role `ADMIN`
+*   **Query Parameters**:
+    *   `month`: Tháng xuất báo cáo (1 - 12) — **Bắt buộc**
+    *   `year`: Năm xuất báo cáo — **Bắt buộc**
+    *   `department` (Tùy chọn): Lọc xuất báo cáo riêng cho một phòng ban. Nếu không truyền sẽ xuất toàn bộ công ty.
+*   **Response (200 OK)**: File Excel binary.
+    *   `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+    *   `Content-Disposition: attachment; filename=Bao_cao_KPI_Thang_<month>_Nam_<year>.xlsx`
+*   **Định dạng file Excel**:
+    *   Header màu nền xanh, chữ trắng đậm.
+    *   Tự động căn chỉnh độ rộng cột.
+    *   Các cột: STT | Mã NV (ID) | Họ và Tên | Phòng ban | Tỷ lệ hoàn thành Task (%) | Điểm Review | Điểm KPI | Xếp loại.
 
 ---
 
 ## 🏢 12. Nhóm API Quản lý Phòng ban / Đội ngũ (`/teams/**`)
-*(Các API này yêu cầu Token có quyền **TEAM:CREATE**, **TEAM:VIEW**, **TEAM:UPDATE**, **TEAM:DELETE** tương ứng hoặc vai trò **ADMIN**)*
+*(Các API yêu cầu quyền **TEAM:CREATE**, **TEAM:VIEW**, **TEAM:UPDATE**, **TEAM:DELETE** tương ứng)*
 
 ### 12.1 Tạo phòng ban mới (Create Team)
 *   **Method**: `POST`
@@ -1090,11 +1318,14 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     ```json
     {
       "name": "IT Department",
-      "code": "IT", // Unique, không được trùng lặp
-      "description": "Information Technology Department", // Tùy chọn
-      "managerId": 2 // ID User được gán làm Trưởng phòng (Tùy chọn)
+      "code": "IT",
+      "description": "Information Technology Department",
+      "managerId": 2
     }
     ```
+    > **Ghi chú trường `code`**: Unique, không được trùng lặp trong toàn hệ thống.
+    > **Ghi chú trường `managerId`**: Tùy chọn. ID User được gán làm Trưởng phòng.
+
 *   **Response (201 Created)**:
     ```json
     {
@@ -1103,7 +1334,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "code": "IT",
       "description": "Information Technology Department",
       "managerId": 2,
-      "managerName": "Manager User",
+      "managerName": "IT Manager",
       "isDeleted": false,
       "createdAt": "2026-05-31T09:00:00",
       "updatedAt": "2026-05-31T09:00:00"
@@ -1128,7 +1359,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "code": "IT",
           "description": "Information Technology Department",
           "managerId": 2,
-          "managerName": "Manager User",
+          "managerName": "IT Manager",
           "isDeleted": false,
           "createdAt": "2026-05-31T09:00:00",
           "updatedAt": "2026-05-31T09:00:00"
@@ -1147,7 +1378,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `GET`
 *   **URL**: `/teams/{id}`
 *   **Quyền hạn**: Authority `TEAM:VIEW` hoặc vai trò `ADMIN`
-*   **Response (200 OK)** (Trả về chi tiết phòng ban cùng danh sách thành viên thuộc phòng đó):
+*   **Response (200 OK)** (Trả về chi tiết phòng ban cùng danh sách thành viên):
     ```json
     {
       "id": 1,
@@ -1155,7 +1386,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "code": "IT",
       "description": "Information Technology Department",
       "managerId": 2,
-      "managerName": "Manager User",
+      "managerName": "IT Manager",
       "isDeleted": false,
       "createdAt": "2026-05-31T09:00:00",
       "updatedAt": "2026-05-31T09:00:00",
@@ -1164,12 +1395,22 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "id": 2,
           "email": "manager@gmail.com",
           "username": "manager",
-          "displayName": "Manager User",
+          "displayName": "IT Manager",
           "avatarUrl": null,
           "isActive": true,
           "position": "Manager",
           "type": "STAFF",
           "status": "ACTIVE",
+          "lockReason": null,
+          "department": "IT",
+          "managerId": null,
+          "teamId": 1,
+          "lastLoginAt": null,
+          "createdAt": "2026-05-27T14:00:00",
+          "updatedAt": "2026-05-27T14:00:00",
+          "lockedUntil": null,
+          "isDeleted": false,
+          "deletedAt": null,
           "roles": []
         }
       ]
@@ -1197,7 +1438,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "code": "IT_NEW",
       "description": "Updated IT Department",
       "managerId": 2,
-      "managerName": "Manager User",
+      "managerName": "IT Manager",
       "isDeleted": false,
       "createdAt": "2026-05-31T09:00:00",
       "updatedAt": "2026-05-31T09:10:00"
@@ -1216,13 +1457,75 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     }
     ```
 
+### 12.6 Thêm thành viên vào Team (Add Member to Team)
+*   **Method**: `POST`
+*   **URL**: `/teams/{id}/members` (Với `{id}` là ID của Team)
+*   **Quyền hạn**: Authority `TEAM:UPDATE` hoặc vai trò `ADMIN`
+*   **Body (JSON)**:
+    ```json
+    {
+      "userId": 5
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "User successfully added to the team."
+    }
+    ```
+
+### 12.7 Xóa thành viên khỏi Team (Remove Member from Team)
+*   **Method**: `DELETE`
+*   **URL**: `/teams/{id}/members/{userId}`
+*   **Quyền hạn**: Authority `TEAM:UPDATE` hoặc vai trò `ADMIN`
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "User successfully removed from the team."
+    }
+    ```
+
 ---
 
 ## 🕒 13. Tiến trình tự động hóa chạy ngầm (Background Worker Scheduler)
 *Hệ thống tích hợp tác vụ chạy tự động định kỳ bằng Spring Scheduler:*
 *   **Thời gian kích hoạt**: Chạy ngầm vào lúc **01:00 AM ngày mùng 1 hàng tháng** (Cron Expression: `0 0 1 1 * ?`).
 *   **Logic nghiệp vụ tự động hóa**:
-    1. Quét danh sách toàn bộ người dùng đang ở trạng thái hoạt động trong hệ thống.
-    2. Đếm số lượng task được giao và tỷ lệ hoàn thành (tỷ lệ phần trăm task COMPLETED so với tổng số task giao có deadline thuộc tháng cũ) của từng nhân viên.
-    3. Tự động tính toán điểm số KPI tổng hợp tháng cũ và khởi tạo bản ghi điểm số KPI mới cho tháng hiện tại với các giá trị mặc định ban đầu.
+    1. Quét danh sách toàn bộ người dùng đang ở trạng thái hoạt động (`isActive = true`, `isDeleted = false`).
+    2. Đếm số task được giao và tỷ lệ hoàn thành (% task `COMPLETED` so với tổng task có deadline thuộc tháng cũ) của từng nhân viên.
+    3. Tự động tính toán và lưu điểm KPI tháng cũ, sau đó khởi tạo bản ghi KPI cho tháng mới với giá trị mặc định.
 
+---
+
+## 📋 Phụ lục: Bảng quyền hạn (Permission Matrix)
+
+| Permission Authority       | ADMIN | MANAGER | STAFF |
+|----------------------------|:-----:|:-------:|:-----:|
+| KPI:VIEW_SELF              | ✅    | —       | ✅    |
+| KPI:VIEW_TEAM              | ✅    | ✅      | —     |
+| KPI/TASK:CREATE            | ✅    | ✅*     | —     |
+| KPI/TASK:VIEW              | ✅    | ✅*     | ✅*   |
+| KPI/TASK:UPDATE            | ✅    | ✅*     | —     |
+| KPI/TASK:DELETE            | ✅    | ✅*     | —     |
+| KPI/TASK:APPROVE           | ✅    | ✅*     | —     |
+| KPI/TASK:REJECT            | ✅    | ✅*     | —     |
+| KPI/TASK:SUBMIT            | ✅    | —       | ✅    |
+| KPI/TASK:UPDATE_PROGRESS   | ✅    | —       | ✅    |
+| KPI/TASK:EXTEND            | ✅    | —       | ✅    |
+| KPI/TASK:APPROVE_EXTENSION | ✅    | ✅      | —     |
+| KPI/TASK:VIEW_SUMMARY      | ✅    | ✅      | ✅    |
+| KPI/REVIEW:CREATE          | ✅    | ✅      | —     |
+| KPI/REVIEW:UPDATE          | ✅    | ✅      | —     |
+| KPI/REVIEW:DELETE          | ✅    | ✅      | —     |
+| KPI/APPEAL:CREATE          | ✅    | —       | ✅    |
+| KPI/APPEAL:RESOLVE         | ✅    | ✅      | —     |
+| KPI/WEIGHT:UPDATE          | ✅    | —       | —     |
+| KPI/REPORT:EXPORT          | ✅    | ✅      | —     |
+| TEAM:CREATE                | ✅    | —       | —     |
+| TEAM:VIEW                  | ✅    | ✅      | ✅    |
+| TEAM:UPDATE                | ✅    | —       | —     |
+| TEAM:DELETE                | ✅    | —       | —     |
+
+> **Ghi chú `*`**: Có thêm ràng buộc dữ liệu (data isolation) — chỉ được thao tác với task/user trong phạm vi team/phòng ban của mình.

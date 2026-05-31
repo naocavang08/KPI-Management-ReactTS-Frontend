@@ -47,3 +47,7 @@ export interface UpdateTeamRequest {
     description?: string;
     managerId?: number | null;
 }
+
+export interface AddTeamMemberRequest {
+    userId: number;
+}

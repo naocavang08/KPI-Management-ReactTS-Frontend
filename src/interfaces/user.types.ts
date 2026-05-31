@@ -11,6 +11,9 @@ export interface ManagedUser {
     type: UserType;
     status: UserStatus;
     lockReason?: string | null;
+    department?: string | null;
+    managerId?: number | null;
+    teamId?: number | null;
     lastLoginAt?: string | null;
     createdAt?: string | null;
     updatedAt?: string | null;
@@ -47,6 +50,7 @@ export interface CreateUserRequest {
     position: string;
     type: UserType;
     avatar?: string;
+    teamId?: number;
 }
 
 export interface UpdateUserRequest {
@@ -56,6 +60,7 @@ export interface UpdateUserRequest {
     avatar?: string;
     status?: UserStatus;
     lockedUntil?: string | null;
+    teamId?: number | null;
 }
 
 export interface LockUserRequest {
