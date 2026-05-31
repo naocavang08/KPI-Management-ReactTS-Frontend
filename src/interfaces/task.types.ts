@@ -17,6 +17,7 @@ export interface Task {
     progress: number;
     tags?: string[] | null;
     evidence?: string | null;
+    teamId: number;
     isDeleted?: boolean;
     createdAt?: string | null;
     updatedAt?: string | null;
@@ -41,7 +42,7 @@ export interface TaskListQuery {
     status?: TaskStatus;
     priority?: TaskPriority;
     assigneeId?: number;
-    teamId?: string;
+    teamId?: number;
 }
 
 export interface TeamTaskListQuery {
@@ -62,6 +63,7 @@ export interface CreateTaskRequest {
     assigneeId: number;
     deadline: string;
     priority: TaskPriority;
+    teamId: number;
 }
 
 export interface UpdateTaskRequest {
@@ -78,7 +80,7 @@ export interface RejectTaskRequest {
 }
 
 export interface UpdateTaskProgressRequest {
-    status: TaskStatus;
+    status: "IN_PROGRESS";
     progress: number;
 }
 

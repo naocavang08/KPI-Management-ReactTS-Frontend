@@ -60,7 +60,17 @@ import {
 import { getUsers } from "../../api/user.api";
 import { getTeamMembers } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
-import { hasTaskAuthority, hasRole, hasAuthority } from "../../lib/permissions";
+import {
+    canApproveTask,
+    canDeleteTask,
+    canRejectTask,
+    canSubmitTask,
+    canUpdateTask,
+    canUpdateTaskProgress,
+    hasAuthority,
+    hasRole,
+    hasTaskAuthority,
+} from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import type { ManagedUser } from "../../interfaces/user.types";
 import type {
@@ -90,7 +100,6 @@ type TaskForm = {
 };
 
 type ProgressForm = {
-    status: TaskStatus;
     progress: string;
 };
 
@@ -234,6 +243,11 @@ const parseTags = (value: string) => {
         .filter(Boolean);
 };
 
+const getPositiveNumber = (value: string) => {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+};
+
 const TaskPage = () => {
     const navigate = useNavigate();
     const { success, error } = useToastify();
@@ -261,7 +275,7 @@ const TaskPage = () => {
     const [form, setForm] = useState<TaskForm>(emptyForm);
     const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
     const [progressTarget, setProgressTarget] = useState<Task | null>(null);
-    const [progressForm, setProgressForm] = useState<ProgressForm>({ status: "IN_PROGRESS", progress: "0" });
+    const [progressForm, setProgressForm] = useState<ProgressForm>({ progress: "0" });
     const [submitTarget, setSubmitTarget] = useState<Task | null>(null);
     const [evidence, setEvidence] = useState("");
     const [rejectTarget, setRejectTarget] = useState<Task | null>(null);
@@ -269,12 +283,18 @@ const TaskPage = () => {
     const taskPermissions = useMemo(
         () => ({
             create: hasTaskAuthority(currentUser, permissions, "CREATE"),
-            update: hasTaskAuthority(currentUser, permissions, "UPDATE"),
-            delete: hasTaskAuthority(currentUser, permissions, "DELETE"),
-            approve: hasTaskAuthority(currentUser, permissions, "APPROVE"),
-            reject: hasTaskAuthority(currentUser, permissions, "REJECT"),
-            updateProgress: hasTaskAuthority(currentUser, permissions, "UPDATE_PROGRESS"),
-            submit: hasTaskAuthority(currentUser, permissions, "SUBMIT"),
+        }),
+        [currentUser, permissions]
+    );
+
+    const getTaskPermissions = useCallback(
+        (target: Task | null) => ({
+            update: canUpdateTask(currentUser, permissions, target),
+            delete: canDeleteTask(currentUser, permissions, target),
+            approve: canApproveTask(currentUser, permissions, target),
+            reject: canRejectTask(currentUser, permissions, target),
+            updateProgress: canUpdateTaskProgress(currentUser, permissions, target),
+            submit: canSubmitTask(currentUser, permissions, target),
         }),
         [currentUser, permissions]
     );
@@ -319,7 +339,7 @@ const TaskPage = () => {
                 status: statusFilter === "ALL" ? undefined : statusFilter,
                 priority: priorityFilter === "ALL" ? undefined : priorityFilter,
                 assigneeId: assigneeIdFilter ? Number(assigneeIdFilter) : undefined,
-                teamId: teamIdFilter.trim() || undefined,
+                teamId: getPositiveNumber(teamIdFilter.trim()),
             });
 
             setTasks(response.data);
@@ -392,6 +412,11 @@ const TaskPage = () => {
 
     const openEditDialog = async (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).update) {
+            error("Không có quyền chỉnh sửa task", "Chỉ người tạo task hoặc ADMIN được sửa");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             const detail = await getTaskById(task.id);
@@ -421,6 +446,8 @@ const TaskPage = () => {
         const description = form.description.trim();
         const assigneeId = Number(form.assigneeId);
         const deadline = fromDateTimeLocal(form.deadline);
+        const selectedAssignee = assignees.find((user) => user.id === assigneeId);
+        const teamId = selectedAssignee?.teamId ?? currentUser?.teamId ?? undefined;
 
         if (!title || !description || !assigneeId || !deadline) {
             error("Thiếu thông tin", "Vui lòng nhập tiêu đề, mô tả, người nhận và deadline");
@@ -430,12 +457,18 @@ const TaskPage = () => {
         try {
             setIsSubmitting(true);
             if (taskDialogMode === "create") {
+                if (teamId === undefined) {
+                    error("Thiếu Team ID", "Người nhận task phải thuộc một team có ID số");
+                    return;
+                }
+
                 const payload: CreateTaskRequest = {
                     title,
                     description,
                     assigneeId,
                     deadline,
                     priority: form.priority,
+                    teamId,
                 };
                 await createTask(payload);
                 success("Đã tạo task", "Danh sách task đã được cập nhật");
@@ -463,22 +496,27 @@ const TaskPage = () => {
 
     const openProgressDialog = (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).updateProgress) {
+            error("Không có quyền cập nhật tiến độ", "Chỉ người được giao task được cập nhật tiến độ");
+            return;
+        }
+
         setProgressTarget(task);
-        setProgressForm({ status: task.status, progress: String(task.progress ?? 0) });
+        setProgressForm({ progress: String(Math.min(task.progress ?? 0, 99)) });
     };
 
     const confirmUpdateProgress = async () => {
         if (!progressTarget) return;
         const progress = Number(progressForm.progress);
 
-        if (Number.isNaN(progress) || progress < 0 || progress > 100) {
-            error("Tiến độ không hợp lệ", "Vui lòng nhập giá trị từ 0 đến 100");
+        if (!Number.isInteger(progress) || progress < 0 || progress > 99) {
+            error("Tiến độ không hợp lệ", "Vui lòng nhập giá trị từ 0 đến 99. Dùng Nộp báo cáo để hoàn thành task.");
             return;
         }
 
         try {
             setIsSubmitting(true);
-            await updateTaskProgress(progressTarget.id, { status: progressForm.status, progress });
+            await updateTaskProgress(progressTarget.id, { status: "IN_PROGRESS", progress });
             success("Đã cập nhật tiến độ", progressTarget.title);
             setProgressTarget(null);
             await refreshData();
@@ -491,6 +529,11 @@ const TaskPage = () => {
 
     const openSubmitDialog = (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).submit) {
+            error("Không có quyền nộp báo cáo", "Chỉ người được giao task được nộp báo cáo");
+            return;
+        }
+
         setSubmitTarget(task);
         setEvidence(task.evidence ?? "");
     };
@@ -513,6 +556,11 @@ const TaskPage = () => {
 
     const confirmCompleteTask = async (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).approve) {
+            error("Không có quyền duyệt task", "Task phải chờ duyệt và bạn phải là người tạo task hoặc ADMIN");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             await completeTask(task.id);
@@ -527,6 +575,11 @@ const TaskPage = () => {
 
     const openRejectDialog = (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).reject) {
+            error("Không có quyền từ chối task", "Task phải chờ duyệt và bạn phải là người tạo task hoặc ADMIN");
+            return;
+        }
+
         setRejectTarget(task);
         setRejectNote("");
     };
@@ -555,6 +608,10 @@ const TaskPage = () => {
 
     const confirmDeleteTask = async () => {
         if (!deleteTarget) return;
+        if (!getTaskPermissions(deleteTarget).delete) {
+            error("Không có quyền xóa task", "Chỉ người tạo task hoặc ADMIN được xóa");
+            return;
+        }
 
         try {
             setIsSubmitting(true);
@@ -568,6 +625,8 @@ const TaskPage = () => {
             setIsSubmitting(false);
         }
     };
+
+    const actionPermissions = getTaskPermissions(actionTask);
 
     return (
         <Stack spacing={spacing.lg}>
@@ -687,8 +746,9 @@ const TaskPage = () => {
                             </Select>
                         </FormControl>
                         <TextField
-                            label="Mã team/phòng ban"
+                            label="ID team/phòng ban"
                             size="small"
+                            type="number"
                             value={teamIdFilter}
                             onChange={(event) => {
                                 setTeamIdFilter(event.target.value);
@@ -735,6 +795,7 @@ const TaskPage = () => {
                                 tasks.map((task) => {
                                     const statusTone = getStatusColor(task.status);
                                     const priorityTone = getPriorityColor(task.priority);
+                                    const rowPermissions = getTaskPermissions(task);
                                     return (
                                         <TableRow key={task.id} hover>
                                             <TableCell sx={{ maxWidth: 360 }}>
@@ -767,7 +828,7 @@ const TaskPage = () => {
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title="Chỉnh sửa">
-                                                    <IconButton size="small" onClick={() => void openEditDialog(task)} disabled={isSubmitting || !taskPermissions.update}>
+                                                    <IconButton size="small" onClick={() => void openEditDialog(task)} disabled={isSubmitting || !rowPermissions.update}>
                                                         <Edit2 size={16} />
                                                     </IconButton>
                                                 </Tooltip>
@@ -809,28 +870,28 @@ const TaskPage = () => {
                     <Eye size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Chi tiết</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.update} onClick={() => actionTask && void openEditDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.update} onClick={() => actionTask && void openEditDialog(actionTask)}>
                     <Edit2 size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Chỉnh sửa</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.updateProgress} onClick={() => actionTask && openProgressDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.updateProgress} onClick={() => actionTask && openProgressDialog(actionTask)}>
                     <ClipboardCheck size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Cập nhật tiến độ</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.submit} onClick={() => actionTask && openSubmitDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.submit} onClick={() => actionTask && openSubmitDialog(actionTask)}>
                     <FileUp size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Nộp báo cáo</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.approve} onClick={() => actionTask && void confirmCompleteTask(actionTask)}>
+                <MenuItem disabled={!actionPermissions.approve} onClick={() => actionTask && void confirmCompleteTask(actionTask)}>
                     <CheckCircle2 size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Duyệt hoàn thành</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.reject} onClick={() => actionTask && openRejectDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.reject} onClick={() => actionTask && openRejectDialog(actionTask)}>
                     <XCircle size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Từ chối</Typography>
                 </MenuItem>
                 <MenuItem
-                    disabled={!taskPermissions.delete}
+                    disabled={!actionPermissions.delete}
                     onClick={() => {
                         if (actionTask) setDeleteTarget(actionTask);
                         closeActionMenu();
@@ -888,13 +949,8 @@ const TaskPage = () => {
                 <DialogContent>
                     <Stack spacing={2} sx={{ pt: 1 }}>
                         <Typography variant="body2">{progressTarget?.title}</Typography>
-                        <FormControl fullWidth>
-                            <InputLabel>Trạng thái</InputLabel>
-                            <Select value={progressForm.status} label="Trạng thái" onChange={(event: SelectChangeEvent) => setProgressForm((prev) => ({ ...prev, status: event.target.value as TaskStatus }))}>
-                                {taskStatuses.map((status) => <MenuItem key={status} value={status}>{getStatusLabel(status)}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-                        <TextField label="Tiến độ (%)" type="number" value={progressForm.progress} onChange={(event) => setProgressForm((prev) => ({ ...prev, progress: event.target.value }))} fullWidth sx={inputSx} />
+                        <TextField label="Trạng thái" value={getStatusLabel("IN_PROGRESS")} fullWidth sx={inputSx} disabled />
+                        <TextField label="Tiến độ (%)" type="number" value={progressForm.progress} onChange={(event) => setProgressForm({ progress: event.target.value })} fullWidth sx={inputSx} slotProps={{ htmlInput: { min: 0, max: 99, step: 1 } }} />
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 3 }}>

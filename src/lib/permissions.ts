@@ -181,9 +181,9 @@ export const canUpdateTaskProgress = (
     task: { assigneeId: number } | null
 ): boolean => {
     if (hasRole(user, "ADMIN")) return true;
-    if (!hasTaskAuthority(user, permissions, "UPDATE_PROGRESS")) return false;
     if (!user || !task) return false;
-    return user.id === task.assigneeId;
+    if (user.id !== task.assigneeId) return false;
+    return hasTaskAuthority(user, permissions, "UPDATE_PROGRESS") || hasRole(user, "STAFF");
 };
 
 /**

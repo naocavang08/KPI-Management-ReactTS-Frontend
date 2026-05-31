@@ -35,7 +35,7 @@ export const useLoginPage = () => {
             try {
                 await login(values);
                 success("Signed in", "Welcome back.");
-                navigate("/dashboard", { replace: true });
+                navigate("/settings", { replace: true });
             } catch (err) {
                 const message = err instanceof Error ? err.message : "Login failed";
                 error("Sign in failed", message);

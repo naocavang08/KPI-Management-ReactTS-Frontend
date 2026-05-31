@@ -182,11 +182,16 @@ const KpiAppealPage = () => {
         try {
             setIsHistoryLoading(true);
             const normalizedTeamId = historyTeamId.trim();
+            const parsedTeamId = normalizedTeamId ? Number(normalizedTeamId) : undefined;
+            if (parsedTeamId !== undefined && (!Number.isInteger(parsedTeamId) || parsedTeamId <= 0)) {
+                error("Invalid Team ID", "Team ID must be a positive number");
+                return;
+            }
             const response = await getKpiAppealHistory({
                 page: historyPage,
                 limit: 10,
                 status: historyStatusFilter,
-                teamId: normalizedTeamId ? Number(normalizedTeamId) : undefined,
+                teamId: parsedTeamId,
             });
             setHistoryAppeals(response.data);
             setHistoryPagination(response.pagination);

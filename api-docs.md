@@ -1,5 +1,5 @@
 # Tài liệu API - Hệ thống Quản lý KPI (KPI Management System)
-*Cập nhật lúc: 15:40 ngày 31/05/2026 (Version 5)*
+*Cập nhật lúc: 21:44 ngày 31/05/2026 (Version 6)*
 
 Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thống Backend (Spring Boot) bao gồm các module Authentication, Users, Roles & Permissions, Task Management, Task Extensions, Task History, KPI Core, KPI Reviews, KPI Appeals, KPI Weights, KPI Reports (Excel Export), và Team Management.
 
@@ -293,7 +293,8 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 2.4 Cập nhật thông tin người dùng
 *   **Method**: `PUT`
 *   **URL**: `/users/{id}`
-*   **Quyền hạn**: Role `ADMIN` **hoặc** chính User đó (tự cập nhật thông tin của mình).
+*   **Quyền hạn**: Role `ADMIN`.
+*   **Lưu ý**: Admin **không thể** tự cập nhật thông tin tài khoản của chính mình qua API này. Để cập nhật thông tin cá nhân, hãy dùng các API `/auth/me/fullname`, `/auth/me/avatar` hoặc `/auth/me/password`.
 *   **Body (JSON)** (Các trường đều là tùy chọn):
     ```json
     {
@@ -310,17 +311,29 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     > **Ghi chú trường `teamId`**: Tùy chọn. ID số của Team mới cần gán.
 
 *   **Response (200 OK)**: Trả về thông tin User sau khi cập nhật.
+*   **Response (400 Bad Request)**: Nếu cố cập nhật chính mình:
+    ```json
+    {
+      "error": "You cannot update your own account details through this API. Please use the profile update API."
+    }
+    ```
 
-### 2.5 Xóa người dùng (Soft Delete)
+### 2.5 Xóa người dùng
 *   **Method**: `DELETE`
 *   **URL**: `/users/{id}`
 *   **Quyền hạn**: Role `ADMIN`
-*   **Lưu ý**: Admin không thể tự xóa tài khoản của chính mình.
+*   **Lưu ý**: Admin **không thể** tự xóa tài khoản của chính mình.
 *   **Response (200 OK)**:
     ```json
     {
       "success": true,
-      "message": "User successfully marked as deleted."
+      "message": "User successfully deleted."
+    }
+    ```
+*   **Response (400 Bad Request)**: Nếu cố xóa chính mình:
+    ```json
+    {
+      "error": "You cannot delete your own account"
     }
     ```
 
@@ -328,7 +341,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `PUT`
 *   **URL**: `/users/{id}/lock`
 *   **Quyền hạn**: Role `ADMIN`
-*   **Lưu ý**: Admin không thể tự khóa tài khoản của chính mình.
+*   **Lưu ý**: Admin **không thể** tự khóa tài khoản của chính mình.
 *   **Body (JSON)** (Tùy chọn lý do khóa):
     ```json
     {
@@ -336,17 +349,31 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     }
     ```
 *   **Response (200 OK)**: Trả về thông tin User đã bị khóa (`isActive` thành `false`, `status` thành `LOCKED`).
+*   **Response (400 Bad Request)**: Nếu cố khóa chính mình:
+    ```json
+    {
+      "error": "You cannot lock your own account"
+    }
+    ```
 
 ### 2.7 Mở khóa tài khoản người dùng (Unlock User)
 *   **Method**: `PUT`
 *   **URL**: `/users/{id}/unlock`
 *   **Quyền hạn**: Role `ADMIN`
+*   **Lưu ý**: Admin **không thể** tự mở khóa tài khoản của chính mình.
 *   **Response (200 OK)**: Trả về thông tin User sau khi mở khóa (`isActive` thành `true`, `status` thành `ACTIVE`, `failedAttempt` reset về `0`).
+*   **Response (400 Bad Request)**: Nếu cố mở khóa chính mình:
+    ```json
+    {
+      "error": "You cannot unlock your own account"
+    }
+    ```
 
 ### 2.8 Gán Role cho người dùng
 *   **Method**: `POST`
 *   **URL**: `/users/{id}/roles`
 *   **Quyền hạn**: Role `ADMIN`
+*   **Lưu ý**: Admin **không thể** tự gán role cho chính mình.
 *   **Body (JSON)**:
     ```json
     {
@@ -354,6 +381,12 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     }
     ```
 *   **Response (201 Created)**: Không có dữ liệu trả về (Body rỗng).
+*   **Response (400 Bad Request)**: Nếu cố gán role cho chính mình:
+    ```json
+    {
+      "error": "You cannot assign roles to yourself"
+    }
+    ```
 
 ### 2.9 Xem danh sách các Role của một người dùng
 *   **Method**: `GET`
@@ -375,7 +408,14 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Method**: `DELETE`
 *   **URL**: `/users/{id}/roles/{roleId}`
 *   **Quyền hạn**: Role `ADMIN`
+*   **Lưu ý**: Admin **không thể** tự gỡ bỏ role của chính mình.
 *   **Response (204 No Content)**: Trả về thành công và không có body.
+*   **Response (400 Bad Request)**: Nếu cố gỡ role của chính mình:
+    ```json
+    {
+      "error": "You cannot remove roles from yourself"
+    }
+    ```
 
 ---
 
@@ -525,9 +565,14 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "description": "Xây dựng các bảng KpiScore, KpiWeight, KpiReview, KpiAppeal.",
       "assigneeId": 3,
       "deadline": "2026-06-15T18:00:00",
-      "priority": "HIGH"
+      "priority": "HIGH",
+      "teamId": 1
     }
     ```
+    > **Ghi chú trường `title`**: Tối thiểu 5 ký tự. Bắt buộc.
+    > **Ghi chú trường `assigneeId`**: Bắt buộc. ID người được giao việc.
+    > **Ghi chú trường `deadline`**: Bắt buộc. Phải là thời gian trong tương lai.
+    > **Ghi chú trường `teamId`**: Bắt buộc. ID của Team chứa Task này.
     > **Ghi chú trường `priority`**: `LOW` | `MEDIUM` | `HIGH`. Mặc định là `null` nếu không truyền.
 
 *   **Response (201 Created)**:
@@ -546,6 +591,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "progress": 0,
       "tags": null,
       "evidence": null,
+      "teamId": 1,
       "createdAt": "2026-05-30T10:00:00",
       "updatedAt": "2026-05-30T10:00:00"
     }
@@ -576,6 +622,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "progress": 30,
       "tags": ["Database", "KPI"],
       "evidence": null,
+      "teamId": 1,
       "createdAt": "2026-05-30T10:00:00",
       "updatedAt": "2026-05-30T11:30:00"
     }
@@ -593,7 +640,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     *   `status`: Lọc theo trạng thái (`ASSIGNED`, `IN_PROGRESS`, `PENDING_REVIEW`, `COMPLETED`, `OVERDUE`)
     *   `priority`: Lọc theo độ ưu tiên (`LOW`, `MEDIUM`, `HIGH`)
     *   `assigneeId`: Lọc theo ID nhân viên được giao việc
-    *   `teamId`: Lọc theo department code của team
+    *   `teamId`: Lọc theo ID team (tùy chọn)
 *   **Response (200 OK)**:
     ```json
     {
@@ -612,6 +659,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "progress": 30,
           "tags": ["Database", "KPI"],
           "evidence": null,
+          "teamId": 1,
           "createdAt": "2026-05-30T10:00:00",
           "updatedAt": "2026-05-30T11:30:00"
         }
@@ -721,11 +769,11 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Response (200 OK)**:
     ```json
     {
-      "assigned": 3,
-      "inProgress": 5,
-      "pendingReview": 2,
-      "completed": 12,
-      "overdue": 1
+      "ASSIGNED": 3,
+      "IN_PROGRESS": 5,
+      "PENDING_REVIEW": 2,
+      "COMPLETED": 12,
+      "OVERDUE": 1
     }
     ```
 
@@ -760,6 +808,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
       "progress": 75,
       "tags": ["Database", "KPI", "Optimization"],
       "evidence": null,
+      "teamId": 1,
       "createdAt": "2026-05-30T10:00:00",
       "updatedAt": "2026-05-30T13:00:00"
     }
@@ -813,6 +862,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "progress": 30,
           "tags": ["Database", "KPI"],
           "evidence": null,
+          "teamId": 1,
           "createdAt": "2026-05-30T10:00:00",
           "updatedAt": "2026-05-30T11:30:00"
         }
@@ -892,6 +942,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
           "progress": 30,
           "tags": ["Database", "KPI"],
           "evidence": null,
+          "teamId": 1,
           "createdAt": "2026-05-30T10:00:00",
           "updatedAt": "2026-05-30T11:30:00"
         }

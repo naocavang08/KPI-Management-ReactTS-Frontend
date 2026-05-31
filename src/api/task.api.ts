@@ -22,7 +22,15 @@ export const getTasks = (params: TaskListQuery) => {
 };
 
 export const getTaskById = (id: number) => {
-    return apiClient.get<Task>(`/tasks/${id}`).then((res) => res.data);
+    return apiClient
+        .get<Task>(`/tasks/${id}`, {
+            params: { _t: Date.now() },
+            headers: {
+                "Cache-Control": "no-cache",
+                Pragma: "no-cache",
+            },
+        })
+        .then((res) => res.data);
 };
 
 export const createTask = (body: CreateTaskRequest) => {

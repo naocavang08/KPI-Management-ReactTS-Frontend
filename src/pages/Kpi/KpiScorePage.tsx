@@ -70,7 +70,7 @@ const formatNumber = (value?: number | null) => {
 
 const formatPercent = (value?: number | null) => {
     if (typeof value !== "number" || Number.isNaN(value)) return "-";
-    return `${formatNumber(value * 100)}%`;
+    return `${formatNumber(value)}%`;
 };
 
 const StatCard = ({
@@ -183,16 +183,16 @@ const KpiScorePage = () => {
 
         const parsedMonth = Number(teamMonth);
         const parsedYear = Number(teamYear);
-        const normalizedTeamId = teamId.trim();
+        const parsedTeamId = Number(teamId);
 
-        if (!normalizedTeamId || parsedMonth < 1 || parsedMonth > 12 || !parsedYear) {
-            error("Invalid filters", "Team ID, month 1-12, and year are required");
+        if (!Number.isInteger(parsedTeamId) || parsedTeamId <= 0 || parsedMonth < 1 || parsedMonth > 12 || !parsedYear) {
+            error("Invalid filters", "Numeric Team ID, month 1-12, and year are required");
             return;
         }
 
         try {
             setIsTeamLoading(true);
-            const response = await getTeamKpi(normalizedTeamId, { month: parsedMonth, year: parsedYear });
+            const response = await getTeamKpi(parsedTeamId, { month: parsedMonth, year: parsedYear });
             setTeamKpi(response);
             success("Team KPI loaded", response.teamId);
         } catch (err) {
@@ -312,7 +312,7 @@ const KpiScorePage = () => {
             <Paper sx={{ borderRadius: radius.card, overflow: "hidden", border: elevation.level1.border, boxShadow: "none" }}>
                 <Box component="form" onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void loadTeamKpi(); }} sx={{ p: 2.5, bgcolor: colors.surfaceContainerLowest, borderBottom: `1px solid ${colors.surfaceContainerHighest}` }}>
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ alignItems: { md: "center" } }}>
-                        <TextField label="Team ID" size="small" value={teamId} onChange={(event) => setTeamId(event.target.value)} sx={{ ...inputSx, minWidth: { md: 180 } }} />
+                        <TextField label="Team ID" size="small" type="number" value={teamId} onChange={(event) => setTeamId(event.target.value)} sx={{ ...inputSx, minWidth: { md: 180 } }} />
                         <TextField label="Month" size="small" type="number" value={teamMonth} onChange={(event) => setTeamMonth(event.target.value)} sx={{ ...inputSx, minWidth: { md: 120 } }} />
                         <TextField label="Year" size="small" type="number" value={teamYear} onChange={(event) => setTeamYear(event.target.value)} sx={{ ...inputSx, minWidth: { md: 140 } }} />
                         <Button type="submit" variant="contained" startIcon={isTeamLoading ? <CircularProgress size={16} color="inherit" /> : <Search size={16} />} disabled={isTeamLoading || !canViewTeam}>
