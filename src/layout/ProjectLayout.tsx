@@ -22,6 +22,7 @@ import {
 	ChevronDown,
 	ChevronRight,
 	CircleHelp,
+	ClipboardCheck,
 	FolderKanban,
 	LayoutDashboard,
 	LogOut,
@@ -76,7 +77,20 @@ const navigationItems: NavigationItem[] = [
 		id: "kpi-library",
 		label: "KPI Library",
 		icon: Target,
-		disabled: true,
+		children: [
+			{
+				id: "kpi-scores",
+				label: "KPI Scores",
+				icon: BarChart3,
+				path: "/kpi/scores",
+			},
+			{
+				id: "kpi-reviews",
+				label: "KPI Reviews",
+				icon: ClipboardCheck,
+				path: "/kpi/reviews",
+			},
+		],
 	},
 	{
 		id: "reports",

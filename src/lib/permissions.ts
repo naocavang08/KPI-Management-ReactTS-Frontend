@@ -37,3 +37,7 @@ export const hasAuthority = (
 export const hasTaskAuthority = (user: AuthUser | null, permissions: AuthPermission[], action: string) => {
     return hasAuthority(user, permissions, `KPI/TASK:${action}`);
 };
+
+export const hasKpiAuthority = (user: AuthUser | null, permissions: AuthPermission[], authority: string) => {
+    return hasAuthority(user, permissions, authority);
+};
