@@ -12,6 +12,9 @@ import TaskPage from '../pages/Task/TaskPage';
 import TaskDetailPage from '../pages/Task/TaskDetailPage';
 import KpiScorePage from '../pages/Kpi/KpiScorePage';
 import KpiReviewPage from '../pages/Kpi/KpiReviewPage';
+import KpiAppealPage from '../pages/Kpi/KpiAppealPage';
+import KpiWeightsPage from '../pages/Kpi/KpiWeightsPage';
+import KpiExportPage from '../pages/Kpi/KpiExportPage';
 
 const AppRoutes = () => {
     return (
@@ -43,6 +46,9 @@ const AppRoutes = () => {
                 <Route path="/tasks/:id" element={<TaskDetailPage />} />
                 <Route path="/kpi/scores" element={<KpiScorePage />} />
                 <Route path="/kpi/reviews" element={<KpiReviewPage />} />
+                <Route path="/kpi/appeals" element={<KpiAppealPage />} />
+                <Route path="/kpi/weights" element={<KpiWeightsPage />} />
+                <Route path="/kpi/export" element={<KpiExportPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />

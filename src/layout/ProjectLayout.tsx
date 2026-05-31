@@ -23,15 +23,18 @@ import {
 	ChevronRight,
 	CircleHelp,
 	ClipboardCheck,
+	Download,
 	FolderKanban,
 	LayoutDashboard,
 	LogOut,
 	Menu as MenuIcon,
+	Scale,
 	Settings,
 	Shield,
 	Target,
 	User,
 	Users,
+	MessageSquareWarning,
 } from "lucide-react";
 import { useAuthStore } from "../stores/auth.store";
 import desginToken from "../theme/desginToken";
@@ -89,6 +92,24 @@ const navigationItems: NavigationItem[] = [
 				label: "KPI Reviews",
 				icon: ClipboardCheck,
 				path: "/kpi/reviews",
+			},
+			{
+				id: "kpi-appeals",
+				label: "KPI Appeals",
+				icon: MessageSquareWarning,
+				path: "/kpi/appeals",
+			},
+			{
+				id: "kpi-weights",
+				label: "KPI Weights",
+				icon: Scale,
+				path: "/kpi/weights",
+			},
+			{
+				id: "kpi-export",
+				label: "KPI Export",
+				icon: Download,
+				path: "/kpi/export",
 			},
 		],
 	},

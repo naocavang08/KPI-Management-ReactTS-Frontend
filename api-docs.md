@@ -1079,10 +1079,150 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 
 ---
 
-## 🕒 12. Tiến trình tự động hóa chạy ngầm (Background Worker Scheduler)
+## 🏢 12. Nhóm API Quản lý Phòng ban / Đội ngũ (`/teams/**`)
+*(Các API này yêu cầu Token có quyền **TEAM:CREATE**, **TEAM:VIEW**, **TEAM:UPDATE**, **TEAM:DELETE** tương ứng hoặc vai trò **ADMIN**)*
+
+### 12.1 Tạo phòng ban mới (Create Team)
+*   **Method**: `POST`
+*   **URL**: `/teams`
+*   **Quyền hạn**: Authority `TEAM:CREATE`
+*   **Body (JSON)**:
+    ```json
+    {
+      "name": "IT Department",
+      "code": "IT", // Unique, không được trùng lặp
+      "description": "Information Technology Department", // Tùy chọn
+      "managerId": 2 // ID User được gán làm Trưởng phòng (Tùy chọn)
+    }
+    ```
+*   **Response (201 Created)**:
+    ```json
+    {
+      "id": 1,
+      "name": "IT Department",
+      "code": "IT",
+      "description": "Information Technology Department",
+      "managerId": 2,
+      "managerName": "Manager User",
+      "isDeleted": false,
+      "createdAt": "2026-05-31T09:00:00",
+      "updatedAt": "2026-05-31T09:00:00"
+    }
+    ```
+
+### 12.2 Lấy danh sách phòng ban (Phân trang & Tìm kiếm)
+*   **Method**: `GET`
+*   **URL**: `/teams`
+*   **Quyền hạn**: Authority `TEAM:VIEW` hoặc vai trò `ADMIN`
+*   **Query Parameters (Tùy chọn)**:
+    *   `page`: Số trang, mặc định là `1`
+    *   `limit`: Số bản ghi mỗi trang, mặc định là `20`
+    *   `search`: Tìm kiếm theo tên hoặc mã phòng ban
+*   **Response (200 OK)**:
+    ```json
+    {
+      "data": [
+        {
+          "id": 1,
+          "name": "IT Department",
+          "code": "IT",
+          "description": "Information Technology Department",
+          "managerId": 2,
+          "managerName": "Manager User",
+          "isDeleted": false,
+          "createdAt": "2026-05-31T09:00:00",
+          "updatedAt": "2026-05-31T09:00:00"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "totalElements": 1,
+        "totalPages": 1
+      }
+    }
+    ```
+
+### 12.3 Xem chi tiết một phòng ban
+*   **Method**: `GET`
+*   **URL**: `/teams/{id}`
+*   **Quyền hạn**: Authority `TEAM:VIEW` hoặc vai trò `ADMIN`
+*   **Response (200 OK)** (Trả về chi tiết phòng ban cùng danh sách thành viên thuộc phòng đó):
+    ```json
+    {
+      "id": 1,
+      "name": "IT Department",
+      "code": "IT",
+      "description": "Information Technology Department",
+      "managerId": 2,
+      "managerName": "Manager User",
+      "isDeleted": false,
+      "createdAt": "2026-05-31T09:00:00",
+      "updatedAt": "2026-05-31T09:00:00",
+      "members": [
+        {
+          "id": 2,
+          "email": "manager@gmail.com",
+          "username": "manager",
+          "displayName": "Manager User",
+          "avatarUrl": null,
+          "isActive": true,
+          "position": "Manager",
+          "type": "STAFF",
+          "status": "ACTIVE",
+          "roles": []
+        }
+      ]
+    }
+    ```
+
+### 12.4 Cập nhật phòng ban hoặc chỉ định/thay đổi Trưởng phòng
+*   **Method**: `PUT`
+*   **URL**: `/teams/{id}`
+*   **Quyền hạn**: Authority `TEAM:UPDATE` hoặc vai trò `ADMIN`
+*   **Body (JSON)**:
+    ```json
+    {
+      "name": "IT Department Updated",
+      "code": "IT_NEW",
+      "description": "Updated IT Department",
+      "managerId": 2
+    }
+    ```
+*   **Response (200 OK)**:
+    ```json
+    {
+      "id": 1,
+      "name": "IT Department Updated",
+      "code": "IT_NEW",
+      "description": "Updated IT Department",
+      "managerId": 2,
+      "managerName": "Manager User",
+      "isDeleted": false,
+      "createdAt": "2026-05-31T09:00:00",
+      "updatedAt": "2026-05-31T09:10:00"
+    }
+    ```
+
+### 12.5 Xóa mềm phòng ban (Soft Delete)
+*   **Method**: `DELETE`
+*   **URL**: `/teams/{id}`
+*   **Quyền hạn**: Authority `TEAM:DELETE` hoặc vai trò `ADMIN`
+*   **Response (200 OK)**:
+    ```json
+    {
+      "success": true,
+      "message": "Team deleted successfully"
+    }
+    ```
+
+---
+
+## 🕒 13. Tiến trình tự động hóa chạy ngầm (Background Worker Scheduler)
 *Hệ thống tích hợp tác vụ chạy tự động định kỳ bằng Spring Scheduler:*
 *   **Thời gian kích hoạt**: Chạy ngầm vào lúc **01:00 AM ngày mùng 1 hàng tháng** (Cron Expression: `0 0 1 1 * ?`).
 *   **Logic nghiệp vụ tự động hóa**:
     1. Quét danh sách toàn bộ người dùng đang ở trạng thái hoạt động trong hệ thống.
     2. Đếm số lượng task được giao và tỷ lệ hoàn thành (tỷ lệ phần trăm task COMPLETED so với tổng số task giao có deadline thuộc tháng cũ) của từng nhân viên.
     3. Tự động tính toán điểm số KPI tổng hợp tháng cũ và khởi tạo bản ghi điểm số KPI mới cho tháng hiện tại với các giá trị mặc định ban đầu.
+
