@@ -58,8 +58,9 @@ import {
     updateTaskProgress,
 } from "../../api/task.api";
 import { getUsers } from "../../api/user.api";
+import { getTeamMembers } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
-import { hasTaskAuthority } from "../../lib/permissions";
+import { hasTaskAuthority, hasRole, hasAuthority } from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import type { ManagedUser } from "../../interfaces/user.types";
 import type {
@@ -288,6 +289,10 @@ const TaskPage = () => {
     }, [searchTerm]);
 
     const loadSummary = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasTaskAuthority(currentUser, permissions, "VIEW_SUMMARY")) {
+            setSummary(emptySummary);
+            return;
+        }
         try {
             setIsSummaryLoading(true);
             const response = await getTaskSummary();
@@ -297,9 +302,14 @@ const TaskPage = () => {
         } finally {
             setIsSummaryLoading(false);
         }
-    }, [error]);
+    }, [currentUser, permissions, error]);
 
     const loadTasks = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasTaskAuthority(currentUser, permissions, "VIEW")) {
+            setTasks([]);
+            setPagination(emptyPagination);
+            return;
+        }
         try {
             setIsLoading(true);
             const response = await getTasks({
@@ -319,19 +329,33 @@ const TaskPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [assigneeIdFilter, debouncedSearch, error, limit, page, priorityFilter, statusFilter, teamIdFilter]);
+    }, [currentUser, permissions, assigneeIdFilter, debouncedSearch, error, limit, page, priorityFilter, statusFilter, teamIdFilter]);
 
     const loadAssignees = useCallback(async () => {
-        try {
-            setIsUsersLoading(true);
-            const response = await getUsers({ page: 1, limit: 100, status: "ACTIVE" });
-            setAssignees(response.data);
-        } catch (err) {
-            error("Không tải được danh sách người dùng", getErrorMessage(err, "Vui lòng thử lại sau"));
-        } finally {
-            setIsUsersLoading(false);
+        if (hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:VIEW")) {
+            try {
+                setIsUsersLoading(true);
+                const response = await getUsers({ page: 1, limit: 100, status: "ACTIVE" });
+                setAssignees(response.data);
+            } catch (err) {
+                error("Không tải được danh sách người dùng", getErrorMessage(err, "Vui lòng thử lại sau"));
+            } finally {
+                setIsUsersLoading(false);
+            }
+        } else if (currentUser?.teamId !== null && currentUser?.teamId !== undefined && hasAuthority(currentUser, permissions, "TEAM:VIEW")) {
+            try {
+                setIsUsersLoading(true);
+                const response = await getTeamMembers(currentUser.teamId, { page: 1, limit: 100 });
+                setAssignees(response.data);
+            } catch (err) {
+                error("Không tải được danh sách thành viên team", getErrorMessage(err, "Vui lòng thử lại sau"));
+            } finally {
+                setIsUsersLoading(false);
+            }
+        } else {
+            setAssignees([]);
         }
-    }, [error]);
+    }, [currentUser, permissions, error]);
 
     useEffect(() => {
         void loadTasks();
