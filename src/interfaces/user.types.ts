@@ -37,10 +37,11 @@ export interface UserListQuery {
     limit?: number;
     name?: string;
     email?: string;
-    status?: UserStatus;
+    status?: UserStatus | Lowercase<UserStatus>;
 }
 
 export interface CreateUserRequest {
+    username: string;
     fullName: string;
     email: string;
     position: string;

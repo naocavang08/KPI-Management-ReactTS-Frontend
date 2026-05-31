@@ -8,6 +8,8 @@ import SettingPage from '../pages/SettingPage';
 import RolePage from '../pages/Admin/RolePage';
 import GetRolePage from '../pages/Admin/GetRolePage';
 import UserPage from '../pages/Admin/UserPage';
+import TaskPage from '../pages/Task/TaskPage';
+import TaskDetailPage from '../pages/Task/TaskDetailPage';
 
 const AppRoutes = () => {
     return (
@@ -35,6 +37,8 @@ const AppRoutes = () => {
                 <Route path="/admin/role" element={<RolePage />} />
                 <Route path="/admin/role/:id" element={<GetRolePage />} />
                 <Route path="/admin/user" element={<UserPage />} />
+                <Route path="/tasks" element={<TaskPage />} />
+                <Route path="/tasks/:id" element={<TaskDetailPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />
