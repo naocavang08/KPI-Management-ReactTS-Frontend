@@ -33,7 +33,7 @@ import { Building2, Edit2, Eye, Loader2, Plus, Search, Trash2, UserMinus, UserPl
 import { addTeamMember, createTeam, deleteTeam, getTeamById, getTeamMembers, getTeams, removeTeamMember, updateTeam } from "../../api/team.api";
 import { getUsers } from "../../api/user.api";
 import { useToastify } from "../../hooks/useToastify";
-import { hasAuthority } from "../../lib/permissions";
+import { hasAuthority, hasRole } from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import desginToken from "../../theme/desginToken";
 import type { CreateTeamRequest, Team, TeamDetail, TeamPagination, UpdateTeamRequest } from "../../interfaces/team.types";
@@ -195,6 +195,10 @@ const TeamPage = () => {
     }, [loadTeams]);
 
     const loadManagerOptions = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasAuthority(currentUser, permissions, "USER:VIEW")) {
+            setManagerOptions([]);
+            return;
+        }
         try {
             setIsManagersLoading(true);
             const response = await getUsers({ page: 1, limit: 100, status: "active" });
@@ -204,16 +208,20 @@ const TeamPage = () => {
         } finally {
             setIsManagersLoading(false);
         }
-    }, [error]);
+    }, [currentUser, permissions, error]);
 
     const loadMemberOptions = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasAuthority(currentUser, permissions, "USER:VIEW")) {
+            setMemberOptions([]);
+            return;
+        }
         try {
             const response = await getUsers({ page: 1, limit: 100, status: "active" });
             setMemberOptions(response.data);
         } catch (err) {
             error("Cannot load user list", getErrorMessage(err, "Please try again later"));
         }
-    }, [error]);
+    }, [currentUser, permissions, error]);
 
     const openCreateDialog = async () => {
         setForm(emptyForm);
@@ -256,9 +264,9 @@ const TeamPage = () => {
     });
 
     const buildUpdatePayload = (): UpdateTeamRequest => ({
-            name: form.name.trim(),
-            code: form.code.trim(),
-            description: form.description.trim() || undefined,
+        name: form.name.trim(),
+        code: form.code.trim(),
+        description: form.description.trim() || undefined,
         managerId: form.managerId ? Number(form.managerId) : null,
     });
 
@@ -310,7 +318,9 @@ const TeamPage = () => {
             const [detail, members] = await Promise.all([
                 getTeamById(team.id),
                 getTeamMembers(team.id, { page: 1, limit: 100 }),
-                loadMemberOptions(),
+                (canUpdate && (hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:VIEW")))
+                    ? loadMemberOptions()
+                    : Promise.resolve(),
             ]);
             setDetailTeam(detail);
             setDetailMembers(members.data);
