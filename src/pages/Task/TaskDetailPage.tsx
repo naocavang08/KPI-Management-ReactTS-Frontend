@@ -265,16 +265,12 @@ const TaskDetailPage = () => {
     }, [error, taskId]);
 
     useEffect(() => {
-        void loadTask();
-    }, [loadTask]);
+        void Promise.all([loadTask(), loadHistory()]);
+    }, [loadTask, loadHistory]);
 
     useEffect(() => {
         void loadAssignees();
     }, [loadAssignees]);
-
-    useEffect(() => {
-        void loadHistory();
-    }, [loadHistory]);
 
     const handleFormChange = <K extends keyof TaskForm>(field: K, value: TaskForm[K]) => {
         setForm((prev) => ({ ...prev, [field]: value }));
