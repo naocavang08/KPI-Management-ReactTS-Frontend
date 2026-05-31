@@ -379,12 +379,13 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 
 ---
 
-## 🛡️ 3. Nhóm API Quản lý Role & Permission (`/roles/**`)
-*(Các API này yêu cầu Token có quyền **ADMIN**)*
+## 🛡️ 3. Nhóm API Quản lý Role & Permission (`/roles/**` và `/permissions`)
+*(Các API `/roles/**` yêu cầu Token có quyền hạn tương ứng (mặc định được gán cho vai trò **ADMIN**), API `/permissions` yêu cầu Token đã đăng nhập)*
 
 ### 3.1 Lấy toàn bộ danh sách Role trong hệ thống
 *   **Method**: `GET`
 *   **URL**: `/roles`
+*   **Quyền hạn**: Authority `ROLE:VIEW` (Mặc định gán cho `ADMIN`)
 *   **Response (200 OK)**:
     ```json
     [
@@ -405,6 +406,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 3.2 Xem chi tiết một Role (Get Role by ID)
 *   **Method**: `GET`
 *   **URL**: `/roles/{id}`
+*   **Quyền hạn**: Authority `ROLE:VIEW` (Mặc định gán cho `ADMIN`)
 *   **Response (200 OK)**:
     ```json
     {
@@ -423,6 +425,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 3.3 Tạo mới một Role
 *   **Method**: `POST`
 *   **URL**: `/roles`
+*   **Quyền hạn**: Authority `ROLE:CREATE` (Mặc định gán cho `ADMIN`)
 *   **Body (JSON)**:
     ```json
     {
@@ -437,17 +440,20 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 3.4 Cập nhật thông tin Role
 *   **Method**: `PUT`
 *   **URL**: `/roles/{id}`
+*   **Quyền hạn**: Authority `ROLE:UPDATE` (Mặc định gán cho `ADMIN`)
 *   **Body (JSON)**: Giống cấu trúc Request Body tạo mới.
 *   **Response (200 OK)**: Trả về thông tin Role sau cập nhật.
 
 ### 3.5 Xóa một Role
 *   **Method**: `DELETE`
 *   **URL**: `/roles/{id}`
+*   **Quyền hạn**: Authority `ROLE:DELETE` (Mặc định gán cho `ADMIN`)
 *   **Response (204 No Content)**: Trả về thành công, không có body.
 
 ### 3.6 Xem danh sách các Permission (quyền) của một Role
 *   **Method**: `GET`
 *   **URL**: `/roles/{id}/permissions`
+*   **Quyền hạn**: Authority `ROLE:VIEW` (Mặc định gán cho `ADMIN`)
 *   **Response (200 OK)**:
     ```json
     [
@@ -463,6 +469,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 3.7 Gán Permission cho Role
 *   **Method**: `POST`
 *   **URL**: `/roles/{id}/permissions`
+*   **Quyền hạn**: Authority `ROLE:ASSIGN` (Mặc định gán cho `ADMIN`)
 *   **Body (JSON)**:
     ```json
     {
@@ -474,11 +481,13 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 3.8 Gỡ bỏ Permission khỏi Role
 *   **Method**: `DELETE`
 *   **URL**: `/roles/{id}/permissions/{permissionId}`
+*   **Quyền hạn**: Authority `ROLE:ASSIGN` (Mặc định gán cho `ADMIN`)
 *   **Response (204 No Content)**: Trả về thành công, không có body.
 
 ### 3.9 Lấy toàn bộ danh sách Permission trong hệ thống (Get All Permissions)
 *   **Method**: `GET`
 *   **URL**: `/permissions`
+*   **Quyền hạn**: Chỉ cần đã đăng nhập (Token hợp lệ)
 *   **Response (200 OK)**:
     ```json
     [
@@ -505,7 +514,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.1 Tạo mới Task (Create Task)
 *   **Method**: `POST`
 *   **URL**: `/tasks`
-*   **Quyền hạn**: Authority `KPI/TASK:CREATE` hoặc role `ADMIN`
+*   **Quyền hạn**: Authority `KPI/TASK:CREATE` hoặc `TASK:CREATE_TEAM` hoặc role `ADMIN`
 *   **Ràng buộc**:
     *   Người tạo Task (Manager) và người được giao (Assignee) phải thuộc **cùng một Team** (`team.id` phải giống nhau). Vi phạm sẽ trả về lỗi `400`.
     *   `deadline` phải là thời gian **trong tương lai**.
@@ -780,7 +789,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.11 Lấy danh sách Task nội bộ Team (Get Team Tasks)
 *   **Method**: `GET`
 *   **URL**: `/tasks/team/{teamId}`
-*   **Quyền hạn**: Authority `KPI/TASK:VIEW` hoặc role `ADMIN`
+*   **Quyền hạn**: Authority `TASK:VIEW_TEAM` hoặc role `ADMIN`
 *   **Ràng buộc phân quyền**: Chỉ ADMIN, Trưởng phòng (Leader) của team đó, hoặc các nhân viên thuộc team đó mới được quyền truy cập. Các trường hợp truy cập chéo phòng ban khác sẽ bị từ chối với lỗi `403 Forbidden`.
 *   **Query Parameters (Tùy chọn)**:
     *   `page`: Số trang, mặc định là `1`
@@ -820,7 +829,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.12 Xóa nhanh toàn bộ Task của Team (Bulk Soft Delete Team Tasks)
 *   **Method**: `DELETE`
 *   **URL**: `/tasks/team/{teamId}`
-*   **Quyền hạn**: Authority `KPI/TASK:DELETE` hoặc role `ADMIN`
+*   **Quyền hạn**: Authority `TASK:DELETE_TEAM` hoặc role `ADMIN`
 *   **Ràng buộc**: Chỉ ADMIN hoặc LEADER của team đó mới được quyền xóa. Thực hiện chuyển toàn bộ task đang hoạt động (`isDeleted = false`) của team này sang trạng thái xóa mềm (`isDeleted = true`).
 *   **Response (200 OK)**:
     ```json
@@ -1613,5 +1622,17 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 | TEAM:VIEW                  | ✅    | ✅      | ✅    |
 | TEAM:UPDATE                | ✅    | —       | —     |
 | TEAM:DELETE                | ✅    | —       | —     |
+| TASK:CREATE_TEAM           | ✅    | ✅      | —     |
+| TASK:VIEW_TEAM             | ✅    | ✅      | ✅    |
+| TASK:DELETE_TEAM           | ✅    | ✅      | —     |
+| USER:CREATE                | ✅    | —       | —     |
+| USER:UPDATE                | ✅    | —       | —     |
+| USER:VIEW                  | ✅    | —       | —     |
+| USER:DELETE                | ✅    | —       | —     |
+| ROLE:CREATE                | ✅    | —       | —     |
+| ROLE:UPDATE                | ✅    | —       | —     |
+| ROLE:VIEW                  | ✅    | —       | —     |
+| ROLE:DELETE                | ✅    | —       | —     |
+| ROLE:ASSIGN                | ✅    | —       | —     |
 
 > **Ghi chú `*`**: Có thêm ràng buộc dữ liệu (data isolation) — chỉ được thao tác với task/user trong phạm vi team/phòng ban của mình.
