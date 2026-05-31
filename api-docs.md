@@ -217,6 +217,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 *   **Body (JSON)**:
     ```json
     {
+      "username": "nguyenvanb", // Từ 3-50 ký tự, chỉ gồm chữ, số, gạch dưới và dấu chấm
       "fullName": "Nguyễn Văn B",
       "email": "nguyenvanb@gmail.com",
       "position": "Tester",
@@ -229,7 +230,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
     {
       "id": 3,
       "email": "nguyenvanb@gmail.com",
-      "username": "nguyenvanb", // Username tự động tạo từ email prefix
+      "username": "nguyenvanb",
       "displayName": "Nguyễn Văn B",
       "avatarUrl": "https://example.com/avatar.jpg",
       "isActive": true,
@@ -448,7 +449,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.1 Tạo mới Task (Create Task)
 *   **Method**: `POST`
 *   **URL**: `/tasks`
-*   **Quyền hạn**: `MANAGER` (Quản lý trực tiếp phân phối công việc cho nhân viên)
+*   **Quyền hạn**: Authority `KPI/TASK:CREATE` hoặc role `ADMIN`
 *   **Body (JSON)**:
     ```json
     {
@@ -483,6 +484,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.2 Xem chi tiết một Task (Get Task by ID)
 *   **Method**: `GET`
 *   **URL**: `/tasks/{id}`
+*   **Quyền hạn**: Authority `KPI/TASK:VIEW` hoặc role `ADMIN`
 *   **Response (200 OK)**:
     ```json
     {
@@ -507,6 +509,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.3 Lấy danh sách Task (Phân trang & Bộ lọc)
 *   **Method**: `GET`
 *   **URL**: `/tasks`
+*   **Quyền hạn**: Authority `KPI/TASK:VIEW` hoặc role `ADMIN`
 *   **Query Parameters (Tùy chọn)**:
     *   `page`: Số trang, mặc định là `1`
     *   `limit`: Số bản ghi mỗi trang, mặc định là `20`
@@ -549,7 +552,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.4 Chấp nhận hoàn thành Task (Complete Task)
 *   **Method**: `PATCH`
 *   **URL**: `/tasks/{id}/complete`
-*   **Quyền hạn**: `MANAGER` (Quản lý duyệt hoàn thành công việc của nhân viên)
+*   **Quyền hạn**: Authority `KPI/TASK:APPROVE` hoặc role `ADMIN`
 *   **Response (200 OK)**:
     ```json
     {
@@ -561,7 +564,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.5 Từ chối hoàn thành Task (Reject Task)
 *   **Method**: `PATCH`
 *   **URL**: `/tasks/{id}/reject`
-*   **Quyền hạn**: `MANAGER`
+*   **Quyền hạn**: Authority `KPI/TASK:REJECT` hoặc role `ADMIN`
 *   **Body (JSON)**:
     ```json
     {
@@ -579,7 +582,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.6 Cập nhật thông tin Task (Update Task)
 *   **Method**: `PUT`
 *   **URL**: `/tasks/{id}`
-*   **Quyền hạn**: Authority `TASK:UPDATE` hoặc role `ADMIN`
+*   **Quyền hạn**: Authority `KPI/TASK:UPDATE` hoặc role `ADMIN`
 *   **Body (JSON)** (Các trường đều là tùy chọn):
     ```json
     {
@@ -627,6 +630,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 4.8 Lấy thống kê/tổng hợp trạng thái Task (Task Summary)
 *   **Method**: `GET`
 *   **URL**: `/tasks/summary`
+*   **Quyền hạn**: Authority `KPI/TASK:VIEW_SUMMARY` hoặc role `ADMIN`
 *   **Mô tả**: Trả về thống kê số lượng các Task của người dùng hiện tại theo các trạng thái khác nhau.
 *   **Response (200 OK)**:
     ```json
@@ -762,14 +766,12 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ---
 
 ## 📊 7. Nhóm API Điểm số KPI (`/kpi/**`)
+*(Yêu cầu người dùng đã đăng nhập thành công. Các API của phân hệ KPI được bảo vệ bằng JWT)*
 
 ### 7.1 Lấy thông tin điểm KPI cá nhân (Get User KPI)
 *   **Method**: `GET`
 *   **URL**: `/kpi/user/{userId}`
-*   **Quyền hạn**:
-    *   `ADMIN`: Xem được điểm KPI của bất kỳ nhân viên nào.
-    *   `MANAGER`: Xem được điểm KPI của chính mình và của các Staff thuộc phòng ban mình quản lý.
-    *   `STAFF`: Chỉ được phép xem điểm KPI của chính bản thân mình (yêu cầu `userId` trùng với ID của tài khoản đang đăng nhập).
+*   **Quyền hạn**: Authority `KPI:VIEW_SELF` (đối với cá nhân), `KPI:VIEW_TEAM` (đối với MANAGER xem phòng ban), hoặc role `ADMIN`
 *   **Query Parameters (Tùy chọn)**:
     *   `year`: Năm cần lấy điểm số, mặc định là năm hiện tại.
 *   **Response (200 OK)**:
@@ -800,9 +802,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 7.2 Lấy thông tin điểm KPI của phòng ban (Get Team KPI)
 *   **Method**: `GET`
 *   **URL**: `/kpi/team/{teamId}`
-*   **Quyền hạn**:
-    *   `ADMIN`: Xem được bất kỳ Team nào.
-    *   `MANAGER`: Chỉ xem được KPI của Team mà mình trực tiếp quản lý.
+*   **Quyền hạn**: Authority `KPI:VIEW_TEAM` hoặc role `ADMIN`
 *   **Query Parameters (Tùy chọn)**:
     *   `month`: Tháng cần lấy điểm (1 - 12)
     *   `year`: Năm cần lấy điểm
@@ -841,7 +841,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 8.1 Tạo mới đánh giá KPI hàng tháng (Create KPI Review)
 *   **Method**: `POST`
 *   **URL**: `/kpi/reviews`
-*   **Quyền hạn**: `MANAGER` (Dành cho Quản lý chấm điểm hiệu suất làm việc hàng tháng của nhân viên)
+*   **Quyền hạn**: Authority `KPI/REVIEW:CREATE` hoặc role `ADMIN`
 *   **Ràng buộc**:
     *   `reviewScore` bắt buộc nằm trong khoảng từ `1.0` đến `10.0`.
     *   Tự động tính toán lại điểm KPI tổng hợp của nhân viên ngay lập tức sau khi chấm điểm.
@@ -874,7 +874,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 8.2 Cập nhật đánh giá KPI (Update KPI Review)
 *   **Method**: `PUT`
 *   **URL**: `/kpi/reviews/{id}`
-*   **Quyền hạn**: `MANAGER` (Cho phép sửa điểm hoặc nhận xét nếu quản lý nhập nhầm)
+*   **Quyền hạn**: Authority `KPI/REVIEW:UPDATE` hoặc role `ADMIN`
 *   **Ràng buộc**:
     *   Không cho phép cập nhật nếu bản ghi đánh giá đã bị khóa (ví dụ: đã quá thời gian phúc khảo hoặc đã chốt).
     *   Tự động tính toán lại điểm KPI tổng hợp của nhân viên ngay lập tức sau khi cập nhật.
@@ -904,7 +904,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 8.3 Xóa đánh giá KPI (Delete KPI Review)
 *   **Method**: `DELETE`
 *   **URL**: `/kpi/reviews/{id}`
-*   **Quyền hạn**: `MANAGER` (Hủy bản ghi đánh giá lỗi)
+*   **Quyền hạn**: Authority `KPI/REVIEW:DELETE` hoặc role `ADMIN`
 *   **Ràng buộc**:
     *   Tự động recalculate lại điểm tổng hợp của nhân viên về trạng thái không có điểm review (reviewScore = 0.0) ngay lập tức.
 *   **Response (204 No Content)**: Trả về thành công và không có body.
@@ -938,7 +938,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 9.1 Gửi đơn khiếu nại (Create KPI Appeal)
 *   **Method**: `POST`
 *   **URL**: `/kpi/appeals`
-*   **Quyền hạn**: `STAFF` (Nhân viên gửi đơn khiếu nại nếu nhận thấy điểm Review chưa thỏa đáng)
+*   **Quyền hạn**: Authority `KPI/APPEAL:CREATE` hoặc role `ADMIN`
 *   **Body (JSON)**:
     ```json
     {
@@ -968,7 +968,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 9.2 Xem danh sách các đơn khiếu nại đang chờ xử lý (Get Pending KPI Appeals)
 *   **Method**: `GET`
 *   **URL**: `/kpi/appeals/team`
-*   **Quyền hạn**: `MANAGER` (Xem danh sách đơn đang chờ duyệt của team mình quản lý), `ADMIN` (Xem tất cả các đơn pending trong hệ thống)
+*   **Quyền hạn**: Authority `KPI/APPEAL:RESOLVE` hoặc role `ADMIN` (MANAGER chỉ xem danh sách đơn đang chờ duyệt của team mình quản lý, ADMIN xem toàn bộ các đơn pending trong hệ thống)
 *   **Response (200 OK)**:
     ```json
     [
@@ -992,7 +992,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 9.3 Xử lý đơn khiếu nại (Resolve KPI Appeal)
 *   **Method**: `PATCH`
 *   **URL**: `/kpi/appeals/{id}/resolve`
-*   **Quyền hạn**: `MANAGER` hoặc `ADMIN` (Đưa ra quyết định giải quyết khiếu nại)
+*   **Quyền hạn**: Authority `KPI/APPEAL:RESOLVE` hoặc role `ADMIN`
 *   **Lưu ý**:
     *   Nếu chọn trạng thái là `APPROVED` (chấp nhận phúc khảo), hệ thống sẽ cập nhật trạng thái đơn và đồng thời cập nhật lại điểm tại module Review (kèm theo việc tự động tính toán lại điểm tổng hợp của nhân viên).
     *   Nếu chọn trạng thái là `REJECTED`, đơn khiếu nại sẽ bị bác bỏ.
@@ -1040,7 +1040,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 10.2 Cập nhật giá trị trọng số mới (Update KPI Weights)
 *   **Method**: `PUT`
 *   **URL**: `/kpi/weights`
-*   **Quyền hạn**: Chỉ dành riêng cho quyền **ADMIN**
+*   **Quyền hạn**: Authority `KPI/WEIGHT:UPDATE` hoặc role `ADMIN`
 *   **Ràng buộc**:
     *   Cả hai trường trọng số bắt buộc nằm trong khoảng từ `0.0` đến `1.0`.
     *   Tổng giá trị của `taskWeight` + `reviewWeight` truyền lên phải luôn bằng đúng `1.0`.
@@ -1066,7 +1066,7 @@ Tài liệu này tổng hợp toàn bộ các API hiện tại của hệ thốn
 ### 11.1 Xuất dữ liệu bảng điểm KPI tổng hợp ra file Excel (Export KPI Report)
 *   **Method**: `GET`
 *   **URL**: `/kpi/export`
-*   **Quyền hạn**: Chỉ có **ADMIN** hoặc tài khoản **MANAGER** thuộc phòng ban nhân sự (ví dụ: `department = 'HR'`) mới được phép gọi API này.
+*   **Quyền hạn**: Authority `KPI/REPORT:EXPORT` hoặc role `ADMIN` (Lưu ý: MANAGER cần thuộc phòng ban nhân sự (ví dụ: `department = 'HR'`) mới được xuất).
 *   **Query Parameters (Bắt buộc)**:
     *   `month`: Tháng xuất báo cáo (1 - 12)
     *   `year`: Năm xuất báo cáo (2020 - 2100)

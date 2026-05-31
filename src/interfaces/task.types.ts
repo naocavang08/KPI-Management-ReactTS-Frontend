@@ -73,6 +73,24 @@ export interface SubmitTaskRequest {
     evidence?: string;
 }
 
+export interface RequestTaskExtensionRequest {
+    requestedDeadline: string;
+    reason: string;
+}
+
+export interface ProcessTaskExtensionRequest {
+    approved: boolean;
+    managerNote: string;
+}
+
+export interface TaskHistoryEntry {
+    status: TaskStatus;
+    progress: number;
+    changedByName: string;
+    note?: string | null;
+    createdAt: string;
+}
+
 export type TaskSummary = Record<TaskStatus, number>;
 
 export type TaskMessageResponse = ApiMessageResponse;

@@ -59,6 +59,7 @@ import {
 } from "../../api/task.api";
 import { getUsers } from "../../api/user.api";
 import { useToastify } from "../../hooks/useToastify";
+import { hasTaskAuthority } from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import type { ManagedUser } from "../../interfaces/user.types";
 import type {
@@ -224,6 +225,7 @@ const TaskPage = () => {
     const navigate = useNavigate();
     const { success, error } = useToastify();
     const currentUser = useAuthStore((state) => state.user);
+    const permissions = useAuthStore((state) => state.permissions);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [summary, setSummary] = useState<TaskSummary>(emptySummary);
     const [pagination, setPagination] = useState<TaskPagination>(emptyPagination);
@@ -251,9 +253,17 @@ const TaskPage = () => {
     const [evidence, setEvidence] = useState("");
     const [rejectTarget, setRejectTarget] = useState<Task | null>(null);
     const [rejectNote, setRejectNote] = useState("");
-    const canCreateTask = useMemo(
-        () => currentUser?.roles?.some((role) => role.name === "MANAGER") ?? false,
-        [currentUser?.roles]
+    const taskPermissions = useMemo(
+        () => ({
+            create: hasTaskAuthority(currentUser, permissions, "CREATE"),
+            update: hasTaskAuthority(currentUser, permissions, "UPDATE"),
+            delete: hasTaskAuthority(currentUser, permissions, "DELETE"),
+            approve: hasTaskAuthority(currentUser, permissions, "APPROVE"),
+            reject: hasTaskAuthority(currentUser, permissions, "REJECT"),
+            updateProgress: hasTaskAuthority(currentUser, permissions, "UPDATE_PROGRESS"),
+            submit: hasTaskAuthority(currentUser, permissions, "SUBMIT"),
+        }),
+        [currentUser, permissions]
     );
 
     useEffect(() => {
@@ -335,8 +345,8 @@ const TaskPage = () => {
     };
 
     const openCreateDialog = () => {
-        if (!canCreateTask) {
-            error("Không có quyền tạo task", "API tạo task chỉ cho phép tài khoản có vai trò MANAGER");
+        if (!taskPermissions.create) {
+            error("Không có quyền tạo task", "Cần quyền KPI/TASK:CREATE hoặc vai trò ADMIN");
             return;
         }
 
@@ -538,13 +548,13 @@ const TaskPage = () => {
                             <RefreshCw size={18} />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title={canCreateTask ? "Tạo task" : "Chỉ tài khoản MANAGER được tạo task"}>
+                    <Tooltip title={taskPermissions.create ? "Tạo task" : "Cần quyền KPI/TASK:CREATE hoặc vai trò ADMIN"}>
                         <span>
                             <Button
                                 variant="contained"
                                 startIcon={<Plus size={18} />}
                                 onClick={openCreateDialog}
-                                disabled={!canCreateTask}
+                                disabled={!taskPermissions.create}
                                 sx={{ borderRadius: radius.lg, textTransform: "none", fontWeight: 700 }}
                             >
                                 Tạo task
@@ -721,7 +731,7 @@ const TaskPage = () => {
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title="Chỉnh sửa">
-                                                    <IconButton size="small" onClick={() => void openEditDialog(task)} disabled={isSubmitting}>
+                                                    <IconButton size="small" onClick={() => void openEditDialog(task)} disabled={isSubmitting || !taskPermissions.update}>
                                                         <Edit2 size={16} />
                                                     </IconButton>
                                                 </Tooltip>
@@ -763,27 +773,28 @@ const TaskPage = () => {
                     <Eye size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Chi tiết</Typography>
                 </MenuItem>
-                <MenuItem onClick={() => actionTask && void openEditDialog(actionTask)}>
+                <MenuItem disabled={!taskPermissions.update} onClick={() => actionTask && void openEditDialog(actionTask)}>
                     <Edit2 size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Chỉnh sửa</Typography>
                 </MenuItem>
-                <MenuItem onClick={() => actionTask && openProgressDialog(actionTask)}>
+                <MenuItem disabled={!taskPermissions.updateProgress} onClick={() => actionTask && openProgressDialog(actionTask)}>
                     <ClipboardCheck size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Cập nhật tiến độ</Typography>
                 </MenuItem>
-                <MenuItem onClick={() => actionTask && openSubmitDialog(actionTask)}>
+                <MenuItem disabled={!taskPermissions.submit} onClick={() => actionTask && openSubmitDialog(actionTask)}>
                     <FileUp size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Nộp báo cáo</Typography>
                 </MenuItem>
-                <MenuItem onClick={() => actionTask && void confirmCompleteTask(actionTask)}>
+                <MenuItem disabled={!taskPermissions.approve} onClick={() => actionTask && void confirmCompleteTask(actionTask)}>
                     <CheckCircle2 size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Duyệt hoàn thành</Typography>
                 </MenuItem>
-                <MenuItem onClick={() => actionTask && openRejectDialog(actionTask)}>
+                <MenuItem disabled={!taskPermissions.reject} onClick={() => actionTask && openRejectDialog(actionTask)}>
                     <XCircle size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Từ chối</Typography>
                 </MenuItem>
                 <MenuItem
+                    disabled={!taskPermissions.delete}
                     onClick={() => {
                         if (actionTask) setDeleteTarget(actionTask);
                         closeActionMenu();

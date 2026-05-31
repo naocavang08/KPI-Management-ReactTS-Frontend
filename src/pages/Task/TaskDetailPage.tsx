@@ -35,15 +35,20 @@ import {
 import {
     completeTask,
     deleteTask,
+    getTaskHistory,
     getTaskById,
+    processTaskExtension,
     rejectTask,
+    requestTaskExtension,
     submitTask,
     updateTask,
     updateTaskProgress,
 } from "../../api/task.api";
 import { getUsers } from "../../api/user.api";
 import { useToastify } from "../../hooks/useToastify";
-import type { Task, TaskPriority, TaskStatus, UpdateTaskRequest } from "../../interfaces/task.types";
+import { hasTaskAuthority } from "../../lib/permissions";
+import { useAuthStore } from "../../stores/auth.store";
+import type { Task, TaskHistoryEntry, TaskPriority, TaskStatus, UpdateTaskRequest } from "../../interfaces/task.types";
 import type { ManagedUser } from "../../interfaces/user.types";
 import desginToken from "../../theme/desginToken";
 
@@ -184,8 +189,12 @@ const TaskDetailPage = () => {
     const params = useParams();
     const taskId = Number(params.id);
     const { success, error } = useToastify();
+    const currentUser = useAuthStore((state) => state.user);
+    const permissions = useAuthStore((state) => state.permissions);
     const [task, setTask] = useState<Task | null>(null);
+    const [history, setHistory] = useState<TaskHistoryEntry[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [assignees, setAssignees] = useState<ManagedUser[]>([]);
@@ -198,6 +207,22 @@ const TaskDetailPage = () => {
     const [rejectOpen, setRejectOpen] = useState(false);
     const [rejectNote, setRejectNote] = useState("");
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [extensionOpen, setExtensionOpen] = useState(false);
+    const [requestedDeadline, setRequestedDeadline] = useState("");
+    const [extensionReason, setExtensionReason] = useState("");
+    const [processExtensionOpen, setProcessExtensionOpen] = useState(false);
+    const [extensionApproved, setExtensionApproved] = useState("true");
+    const [managerNote, setManagerNote] = useState("");
+    const taskPermissions = {
+        update: hasTaskAuthority(currentUser, permissions, "UPDATE"),
+        delete: hasTaskAuthority(currentUser, permissions, "DELETE"),
+        approve: hasTaskAuthority(currentUser, permissions, "APPROVE"),
+        reject: hasTaskAuthority(currentUser, permissions, "REJECT"),
+        updateProgress: hasTaskAuthority(currentUser, permissions, "UPDATE_PROGRESS"),
+        submit: hasTaskAuthority(currentUser, permissions, "SUBMIT"),
+        extend: hasTaskAuthority(currentUser, permissions, "EXTEND"),
+        approveExtension: hasTaskAuthority(currentUser, permissions, "APPROVE_EXTENSION"),
+    };
 
     const loadTask = useCallback(async () => {
         if (!taskId) return;
@@ -225,6 +250,20 @@ const TaskDetailPage = () => {
         }
     }, [error]);
 
+    const loadHistory = useCallback(async () => {
+        if (!taskId) return;
+
+        try {
+            setIsHistoryLoading(true);
+            const response = await getTaskHistory(taskId);
+            setHistory(response);
+        } catch (err) {
+            error("Không tải được lịch sử task", getErrorMessage(err, "Vui lòng thử lại sau"));
+        } finally {
+            setIsHistoryLoading(false);
+        }
+    }, [error, taskId]);
+
     useEffect(() => {
         void loadTask();
     }, [loadTask]);
@@ -232,6 +271,10 @@ const TaskDetailPage = () => {
     useEffect(() => {
         void loadAssignees();
     }, [loadAssignees]);
+
+    useEffect(() => {
+        void loadHistory();
+    }, [loadHistory]);
 
     const handleFormChange = <K extends keyof TaskForm>(field: K, value: TaskForm[K]) => {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -271,6 +314,7 @@ const TaskDetailPage = () => {
             success("Đã cập nhật task", task.title);
             setEditOpen(false);
             await loadTask();
+            await loadHistory();
         } catch (err) {
             error("Không cập nhật được task", getErrorMessage(err, "Vui lòng thử lại sau"));
         } finally {
@@ -299,6 +343,7 @@ const TaskDetailPage = () => {
             success("Đã cập nhật tiến độ", task.title);
             setProgressOpen(false);
             await loadTask();
+            await loadHistory();
         } catch (err) {
             error("Không cập nhật được tiến độ", getErrorMessage(err, "Vui lòng thử lại sau"));
         } finally {
@@ -321,6 +366,7 @@ const TaskDetailPage = () => {
             success("Đã nộp báo cáo", task.title);
             setSubmitOpen(false);
             await loadTask();
+            await loadHistory();
         } catch (err) {
             error("Không nộp được báo cáo", getErrorMessage(err, "Vui lòng thử lại sau"));
         } finally {
@@ -336,6 +382,7 @@ const TaskDetailPage = () => {
             await completeTask(task.id);
             success("Đã duyệt hoàn thành", task.title);
             await loadTask();
+            await loadHistory();
         } catch (err) {
             error("Không duyệt được task", getErrorMessage(err, "Vui lòng thử lại sau"));
         } finally {
@@ -359,6 +406,7 @@ const TaskDetailPage = () => {
             setRejectOpen(false);
             setRejectNote("");
             await loadTask();
+            await loadHistory();
         } catch (err) {
             error("Không từ chối được task", getErrorMessage(err, "Vui lòng thử lại sau"));
         } finally {
@@ -376,6 +424,64 @@ const TaskDetailPage = () => {
             navigate("/tasks");
         } catch (err) {
             error("Không xóa được task", getErrorMessage(err, "Vui lòng thử lại sau"));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openExtensionDialog = () => {
+        if (!task) return;
+        setRequestedDeadline(toDateTimeLocal(task.deadline));
+        setExtensionReason("");
+        setExtensionOpen(true);
+    };
+
+    const confirmRequestExtension = async () => {
+        if (!task) return;
+        const deadline = fromDateTimeLocal(requestedDeadline);
+        const reason = extensionReason.trim();
+
+        if (!deadline || !reason) {
+            error("Thiếu thông tin", "Vui lòng nhập deadline mới và lý do gia hạn");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            await requestTaskExtension(task.id, { requestedDeadline: deadline, reason });
+            success("Đã gửi yêu cầu gia hạn", task.title);
+            setExtensionOpen(false);
+            await loadHistory();
+        } catch (err) {
+            error("Không gửi được yêu cầu gia hạn", getErrorMessage(err, "Vui lòng thử lại sau"));
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openProcessExtensionDialog = (approved: boolean) => {
+        setExtensionApproved(String(approved));
+        setManagerNote("");
+        setProcessExtensionOpen(true);
+    };
+
+    const confirmProcessExtension = async () => {
+        if (!task) return;
+        const note = managerNote.trim();
+
+        if (!note) {
+            error("Thiếu ghi chú", "Vui lòng nhập ghi chú xử lý gia hạn");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            await processTaskExtension(task.id, { approved: extensionApproved === "true", managerNote: note });
+            success("Đã xử lý yêu cầu gia hạn", task.title);
+            setProcessExtensionOpen(false);
+            await Promise.all([loadTask(), loadHistory()]);
+        } catch (err) {
+            error("Không xử lý được yêu cầu gia hạn", getErrorMessage(err, "Vui lòng thử lại sau"));
         } finally {
             setIsSubmitting(false);
         }
@@ -420,10 +526,11 @@ const TaskDetailPage = () => {
                     </Stack>
                 </Stack>
                 <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap", justifyContent: { xs: "flex-start", md: "flex-end" } }}>
-                    <Button startIcon={<Edit2 size={16} />} onClick={openEditDialog} variant="outlined" sx={{ textTransform: "none" }}>Sửa</Button>
-                    <Button startIcon={<ClipboardCheck size={16} />} onClick={openProgressDialog} variant="outlined" sx={{ textTransform: "none" }}>Tiến độ</Button>
-                    <Button startIcon={<FileUp size={16} />} onClick={openSubmitDialog} variant="outlined" sx={{ textTransform: "none" }}>Nộp báo cáo</Button>
-                    <Button startIcon={<CheckCircle2 size={16} />} onClick={() => void confirmCompleteTask()} variant="contained" disabled={isSubmitting} sx={{ textTransform: "none" }}>Duyệt</Button>
+                    <Button startIcon={<Edit2 size={16} />} onClick={openEditDialog} variant="outlined" disabled={!taskPermissions.update} sx={{ textTransform: "none" }}>Sửa</Button>
+                    <Button startIcon={<ClipboardCheck size={16} />} onClick={openProgressDialog} variant="outlined" disabled={!taskPermissions.updateProgress} sx={{ textTransform: "none" }}>Tiến độ</Button>
+                    <Button startIcon={<FileUp size={16} />} onClick={openSubmitDialog} variant="outlined" disabled={!taskPermissions.submit} sx={{ textTransform: "none" }}>Nộp báo cáo</Button>
+                    <Button onClick={openExtensionDialog} variant="outlined" disabled={!taskPermissions.extend} sx={{ textTransform: "none" }}>Xin gia hạn</Button>
+                    <Button startIcon={<CheckCircle2 size={16} />} onClick={() => void confirmCompleteTask()} variant="contained" disabled={isSubmitting || !taskPermissions.approve} sx={{ textTransform: "none" }}>Duyệt</Button>
                 </Stack>
             </Stack>
 
@@ -491,16 +598,61 @@ const TaskDetailPage = () => {
                     <Paper elevation={0} sx={{ p: spacing.lg, borderRadius: radius.card, border: elevation.level1.border, bgcolor: colors.surfaceContainerLowest }}>
                         <Typography sx={{ ...typography.labelCaps, color: colors.outline, mb: 2 }}>Thao tác khác</Typography>
                         <Stack spacing={1}>
-                            <Button startIcon={<XCircle size={16} />} color="warning" variant="outlined" onClick={() => setRejectOpen(true)} disabled={isSubmitting} sx={{ justifyContent: "flex-start", textTransform: "none" }}>
+                            <Button variant="outlined" onClick={() => openProcessExtensionDialog(true)} disabled={isSubmitting || !taskPermissions.approveExtension} sx={{ justifyContent: "flex-start", textTransform: "none" }}>
+                                Duyệt gia hạn
+                            </Button>
+                            <Button color="warning" variant="outlined" onClick={() => openProcessExtensionDialog(false)} disabled={isSubmitting || !taskPermissions.approveExtension} sx={{ justifyContent: "flex-start", textTransform: "none" }}>
+                                Bác gia hạn
+                            </Button>
+                            <Button startIcon={<XCircle size={16} />} color="warning" variant="outlined" onClick={() => setRejectOpen(true)} disabled={isSubmitting || !taskPermissions.reject} sx={{ justifyContent: "flex-start", textTransform: "none" }}>
                                 Từ chối hoàn thành
                             </Button>
-                            <Button startIcon={<Trash2 size={16} />} color="error" variant="outlined" onClick={() => setDeleteOpen(true)} disabled={isSubmitting} sx={{ justifyContent: "flex-start", textTransform: "none" }}>
+                            <Button startIcon={<Trash2 size={16} />} color="error" variant="outlined" onClick={() => setDeleteOpen(true)} disabled={isSubmitting || !taskPermissions.delete} sx={{ justifyContent: "flex-start", textTransform: "none" }}>
                                 Xóa task
                             </Button>
                         </Stack>
                     </Paper>
                 </Stack>
             </Box>
+
+            <Paper elevation={0} sx={{ p: spacing.lg, borderRadius: radius.card, border: elevation.level1.border, bgcolor: colors.surfaceContainerLowest }}>
+                <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                    <Typography sx={{ ...typography.labelCaps, color: colors.outline }}>Lịch sử thay đổi</Typography>
+                    {isHistoryLoading && <CircularProgress size={18} />}
+                </Stack>
+                <Stack spacing={2}>
+                    {history.length ? (
+                        history.map((entry, index) => {
+                            const entryTone = getStatusColor(entry.status);
+                            return (
+                                <Box key={`${entry.createdAt}-${index}`} sx={{ display: "grid", gridTemplateColumns: "24px 1fr", gap: 1.5 }}>
+                                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                        <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: entryTone.fg, mt: "6px" }} />
+                                        {index < history.length - 1 && <Box sx={{ width: 1, flex: 1, bgcolor: colors.surfaceContainerHighest, mt: 1 }} />}
+                                    </Box>
+                                    <Box>
+                                        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: { sm: "center" }, justifyContent: "space-between" }}>
+                                            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+                                                <Chip size="small" label={getStatusLabel(entry.status)} sx={{ bgcolor: entryTone.bg, color: entryTone.fg, fontWeight: 700 }} />
+                                                <Typography variant="body2" sx={{ fontWeight: 700 }}>{entry.progress}%</Typography>
+                                                <Typography variant="body2" color="text.secondary">bởi {entry.changedByName}</Typography>
+                                            </Stack>
+                                            <Typography variant="caption" color="text.secondary">{formatDateTime(entry.createdAt)}</Typography>
+                                        </Stack>
+                                        {entry.note && (
+                                            <Typography sx={{ mt: 0.75, ...typography.bodyBase, color: colors.onSurfaceVariant }}>
+                                                {entry.note}
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                </Box>
+                            );
+                        })
+                    ) : (
+                        <Typography color="text.secondary">Chưa có lịch sử thay đổi</Typography>
+                    )}
+                </Stack>
+            </Paper>
 
             <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
                 <Box component="form" onSubmit={submitEditForm}>
@@ -579,6 +731,67 @@ const TaskDetailPage = () => {
                 <DialogActions sx={{ px: 3, pb: 3 }}>
                     <Button onClick={() => setRejectOpen(false)} disabled={isSubmitting}>Hủy</Button>
                     <Button color="warning" variant="contained" onClick={() => void confirmRejectTask()} disabled={isSubmitting}>Từ chối</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={extensionOpen} onClose={() => setExtensionOpen(false)} fullWidth maxWidth="xs">
+                <DialogTitle>Xin gia hạn task</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ pt: 1 }}>
+                        <TextField
+                            label="Deadline mới"
+                            type="datetime-local"
+                            value={requestedDeadline}
+                            onChange={(event) => setRequestedDeadline(event.target.value)}
+                            fullWidth
+                            required
+                            sx={inputSx}
+                            slotProps={{ inputLabel: { shrink: true } }}
+                        />
+                        <TextField
+                            label="Lý do gia hạn"
+                            value={extensionReason}
+                            onChange={(event) => setExtensionReason(event.target.value)}
+                            fullWidth
+                            required
+                            multiline
+                            minRows={3}
+                            sx={inputSx}
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 3 }}>
+                    <Button onClick={() => setExtensionOpen(false)} disabled={isSubmitting}>Hủy</Button>
+                    <Button variant="contained" onClick={() => void confirmRequestExtension()} disabled={isSubmitting}>Gửi yêu cầu</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={processExtensionOpen} onClose={() => setProcessExtensionOpen(false)} fullWidth maxWidth="xs">
+                <DialogTitle>{extensionApproved === "true" ? "Duyệt gia hạn" : "Bác gia hạn"}</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ pt: 1 }}>
+                        <FormControl fullWidth>
+                            <InputLabel>Kết quả</InputLabel>
+                            <Select value={extensionApproved} label="Kết quả" onChange={(event: SelectChangeEvent) => setExtensionApproved(event.target.value)}>
+                                <MenuItem value="true">Chấp nhận gia hạn</MenuItem>
+                                <MenuItem value="false">Bác yêu cầu</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            label="Ghi chú quản lý"
+                            value={managerNote}
+                            onChange={(event) => setManagerNote(event.target.value)}
+                            fullWidth
+                            required
+                            multiline
+                            minRows={3}
+                            sx={inputSx}
+                        />
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 3 }}>
+                    <Button onClick={() => setProcessExtensionOpen(false)} disabled={isSubmitting}>Hủy</Button>
+                    <Button variant="contained" onClick={() => void confirmProcessExtension()} disabled={isSubmitting}>Xử lý</Button>
                 </DialogActions>
             </Dialog>
 

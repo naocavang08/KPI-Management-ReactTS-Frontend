@@ -68,6 +68,7 @@ const userStatuses: UserStatus[] = ["ACTIVE", "INACTIVE", "LOCKED"];
 const pageSizes = [10, 20, 50];
 
 type UserForm = {
+    username: string;
     fullName: string;
     email: string;
     position: string;
@@ -78,6 +79,7 @@ type UserForm = {
 };
 
 const emptyForm: UserForm = {
+    username: "",
     fullName: "",
     email: "",
     position: "",
@@ -140,6 +142,7 @@ const getTypeLabel = (type: UserType) => {
 };
 
 const buildFormFromUser = (user: ManagedUser): UserForm => ({
+    username: user.username ?? "",
     fullName: user.displayName ?? "",
     email: user.email ?? "",
     position: user.position ?? "",
@@ -191,7 +194,7 @@ const UserPage = () => {
                 limit,
                 name: keyword || undefined,
                 email: keyword.includes("@") ? keyword : undefined,
-                status: statusFilter === "ALL" ? undefined : statusFilter,
+                status: statusFilter === "ALL" ? undefined : statusFilter.toLowerCase() as Lowercase<UserStatus>,
             });
 
             setUsers(response.data);
@@ -256,12 +259,13 @@ const UserPage = () => {
     const submitUserForm = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const fullName = form.fullName.trim();
+        const username = form.username.trim();
         const email = form.email.trim();
         const position = form.position.trim();
         const avatar = form.avatar.trim();
 
-        if (!fullName || !position || (userDialogMode === "create" && !email)) {
-            error("Thiếu thông tin", "Vui lòng nhập tên, email và vị trí");
+        if (!fullName || !position || (userDialogMode === "create" && (!username || !email))) {
+            error("Thiếu thông tin", "Vui lòng nhập username, tên, email và vị trí");
             return;
         }
 
@@ -269,6 +273,7 @@ const UserPage = () => {
             setIsSubmitting(true);
             if (userDialogMode === "create") {
                 const payload: CreateUserRequest = {
+                    username,
                     fullName,
                     email,
                     position,
@@ -633,6 +638,7 @@ const UserPage = () => {
                     <DialogTitle>{userDialogMode === "create" ? "Thêm người dùng" : "Chỉnh sửa người dùng"}</DialogTitle>
                     <DialogContent>
                         <Stack spacing={2} sx={{ pt: 1 }}>
+                            <TextField label="Username" value={form.username} onChange={(event) => handleFormChange("username", event.target.value)} required={userDialogMode === "create"} disabled={userDialogMode === "edit"} fullWidth sx={inputSx} />
                             <TextField label="Họ và tên" value={form.fullName} onChange={(event) => handleFormChange("fullName", event.target.value)} required fullWidth sx={inputSx} />
                             <TextField label="Email" type="email" value={form.email} onChange={(event) => handleFormChange("email", event.target.value)} required={userDialogMode === "create"} disabled={userDialogMode === "edit"} fullWidth sx={inputSx} />
                             <TextField label="Vị trí" value={form.position} onChange={(event) => handleFormChange("position", event.target.value)} required fullWidth sx={inputSx} />
