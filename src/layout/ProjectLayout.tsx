@@ -26,7 +26,6 @@ import {
 	ClipboardCheck,
 	Download,
 	FolderKanban,
-	LayoutDashboard,
 	LogOut,
 	Menu as MenuIcon,
 	Scale,
@@ -67,12 +66,6 @@ const navigationItems: NavigationItem[] = [
 		label: "Admin",
 		icon: Users,
 		children: [
-			{
-				id: "dashboard",
-				label: "Dashboard",
-				icon: LayoutDashboard,
-				path: "/dashboard",
-			},
 			{
 				id: "admin-users",
 				label: "User",

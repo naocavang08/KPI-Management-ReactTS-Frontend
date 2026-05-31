@@ -7,17 +7,16 @@ import {
     Divider,
     Paper,
     Stack,
-    Switch,
     TextField,
     Typography,
 } from "@mui/material";
-import { BellRing, Link as LinkIcon, LockKeyhole, Mail, MessageSquare, Shield, User } from "lucide-react";
+import { Link as LinkIcon, LockKeyhole, Shield, User } from "lucide-react";
 import desginToken from "../theme/desginToken";
 import { useProfileSettings } from "./useProfileSettings";
 
 const { colors, components, elevation, radius, semantic, spacing, typography } = desginToken;
 
-const tabs = ["Basic information", "Change password", "Notification settings"] as const;
+const tabs = ["Basic information", "Change password"] as const;
 
 const inputSx = {
     "& .MuiInputBase-root": {
@@ -83,11 +82,6 @@ const formatDateTime = (value?: string | null) => {
 
 const SettingPage = () => {
     const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>(tabs[0]);
-    const [notificationConfig, setNotificationConfig] = useState({
-        email: true,
-        push: true,
-        browser: false,
-    });
     const {
         user,
         profileForm,
@@ -536,105 +530,6 @@ const SettingPage = () => {
                                 {isSavingPassword ? "Updating..." : "Update password"}
                             </Button>
                         </Box>
-                    </Stack>
-                </Paper>
-            )}
-
-            {activeTab === "Notification settings" && (
-                <Paper elevation={0} sx={cardSx}>
-                    <Stack spacing={spacing.lg}>
-                        <Typography
-                            sx={{
-                                fontFamily: typography.h2.fontFamily,
-                                fontSize: typography.h2.fontSize,
-                                fontWeight: typography.h2.fontWeight,
-                                lineHeight: typography.h2.lineHeight,
-                                color: colors.onSurface,
-                            }}
-                        >
-                            Notification settings
-                        </Typography>
-
-                        {[
-                            {
-                                key: "email" as const,
-                                icon: <Mail size={18} color={colors.secondary} />,
-                                title: "Email",
-                                description: "Weekly KPI reports",
-                            },
-                            {
-                                key: "push" as const,
-                                icon: <BellRing size={18} color={colors.tertiary} />,
-                                title: "Push notifications",
-                                description: "Manager updates",
-                            },
-                            {
-                                key: "browser" as const,
-                                icon: <MessageSquare size={18} color={colors.primaryContainer} />,
-                                title: "Browser",
-                                description: "KPI target alerts",
-                            },
-                        ].map((item) => (
-                            <Box
-                                key={item.key}
-                                sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    gap: spacing.md,
-                                    p: spacing.md,
-                                    borderRadius: radius.lg,
-                                    backgroundColor: colors.surfaceContainerLow,
-                                }}
-                            >
-                                <Stack direction="row" spacing={spacing.sm} sx={{ alignItems: "center" }}>
-                                    <Box>{item.icon}</Box>
-                                    <Box>
-                                        <Typography
-                                            sx={{
-                                                fontFamily: typography.bodyBase.fontFamily,
-                                                fontSize: typography.bodyBase.fontSize,
-                                                fontWeight: 700,
-                                                lineHeight: typography.bodyBase.lineHeight,
-                                                color: colors.onSurface,
-                                            }}
-                                        >
-                                            {item.title}
-                                        </Typography>
-                                        <Typography
-                                            sx={{
-                                                fontFamily: typography.bodySm.fontFamily,
-                                                fontSize: typography.bodySm.fontSize,
-                                                lineHeight: typography.bodySm.lineHeight,
-                                                color: colors.outline,
-                                            }}
-                                        >
-                                            {item.description}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                                <Switch
-                                    checked={notificationConfig[item.key]}
-                                    onChange={(_, checked) =>
-                                        setNotificationConfig((prev) => ({
-                                            ...prev,
-                                            [item.key]: checked,
-                                        }))
-                                    }
-                                    sx={{
-                                        "& .MuiSwitch-switchBase.Mui-checked": {
-                                            color: colors.primaryContainer,
-                                        },
-                                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                                            backgroundColor: colors.primaryContainer,
-                                        },
-                                        "& .MuiSwitch-track": {
-                                            backgroundColor: colors.outlineVariant,
-                                        },
-                                    }}
-                                />
-                            </Box>
-                        ))}
                     </Stack>
                 </Paper>
             )}
