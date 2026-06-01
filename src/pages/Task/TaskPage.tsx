@@ -58,7 +58,7 @@ import {
     updateTaskProgress,
 } from "../../api/task.api";
 import { getUsers } from "../../api/user.api";
-import { getTeamMembers } from "../../api/team.api";
+import { getTeamMembers, getTeams } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
 import {
     canApproveTask,
@@ -73,6 +73,7 @@ import {
 } from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import type { ManagedUser } from "../../interfaces/user.types";
+import type { Team } from "../../interfaces/team.types";
 import type {
     CreateTaskRequest,
     Task,
@@ -269,6 +270,8 @@ const TaskPage = () => {
     const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [assignees, setAssignees] = useState<ManagedUser[]>([]);
+    const [teamOptions, setTeamOptions] = useState<Team[]>([]);
+    const [isTeamsLoading, setIsTeamsLoading] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [actionTask, setActionTask] = useState<Task | null>(null);
     const [taskDialogMode, setTaskDialogMode] = useState<"create" | "edit" | null>(null);
@@ -377,6 +380,28 @@ const TaskPage = () => {
         }
     }, [currentUser, permissions, error]);
 
+    const loadTeamOptions = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasAuthority(currentUser, permissions, "TEAM:VIEW")) {
+            setTeamOptions([]);
+            return;
+        }
+
+        try {
+            setIsTeamsLoading(true);
+            const response = await getTeams({ page: 1, limit: 100 });
+            setTeamOptions(response.data);
+        } catch (err) {
+            error("KhÃ´ng táº£i Ä‘Æ°á»£c danh sÃ¡ch team", getErrorMessage(err, "Vui lÃ²ng thá»­ láº¡i sau"));
+        } finally {
+            setIsTeamsLoading(false);
+        }
+    }, [currentUser, permissions, error]);
+
+    const hasCurrentUserTeamOption = useMemo(
+        () => currentUser?.teamId !== null && currentUser?.teamId !== undefined && !teamOptions.some((team) => team.id === currentUser.teamId),
+        [currentUser?.teamId, teamOptions]
+    );
+
     useEffect(() => {
         void loadTasks();
     }, [loadTasks]);
@@ -388,6 +413,10 @@ const TaskPage = () => {
     useEffect(() => {
         void loadAssignees();
     }, [loadAssignees]);
+
+    useEffect(() => {
+        void loadTeamOptions();
+    }, [loadTeamOptions]);
 
     const totalTasks = useMemo(() => taskStatuses.reduce((total, status) => total + getSummaryValue(summary, status), 0), [summary]);
 
@@ -458,7 +487,7 @@ const TaskPage = () => {
             setIsSubmitting(true);
             if (taskDialogMode === "create") {
                 if (teamId === undefined) {
-                    error("Thiếu Team ID", "Người nhận task phải thuộc một team có ID số");
+                    error("Thiếu team", "Người nhận task phải thuộc một team hợp lệ");
                     return;
                 }
 
@@ -745,17 +774,31 @@ const TaskPage = () => {
                                 ))}
                             </Select>
                         </FormControl>
-                        <TextField
-                            label="ID team/phòng ban"
-                            size="small"
-                            type="number"
-                            value={teamIdFilter}
-                            onChange={(event) => {
-                                setTeamIdFilter(event.target.value);
-                                setPage(1);
-                            }}
-                            sx={{ ...inputSx, minWidth: { xs: "100%", lg: 120 } }}
-                        />
+                        <FormControl size="small" sx={{ minWidth: { xs: "100%", lg: 220 } }}>
+                            <InputLabel>Team/phòng ban</InputLabel>
+                            <Select
+                                value={teamIdFilter}
+                                label="Team/phòng ban"
+                                disabled={isTeamsLoading}
+                                onChange={(event: SelectChangeEvent) => {
+                                    setTeamIdFilter(event.target.value);
+                                    setPage(1);
+                                }}
+                                sx={{ borderRadius: radius.button, bgcolor: components.input.background }}
+                            >
+                                <MenuItem value="">Tất cả</MenuItem>
+                                {teamOptions.map((team) => (
+                                    <MenuItem key={team.id} value={String(team.id)}>
+                                        {team.name} ({team.code})
+                                    </MenuItem>
+                                ))}
+                                {hasCurrentUserTeamOption && (
+                                    <MenuItem value={String(currentUser?.teamId)}>
+                                        Team #{currentUser?.teamId}
+                                    </MenuItem>
+                                )}
+                            </Select>
+                        </FormControl>
                         <FormControl size="small" sx={{ minWidth: { xs: "100%", lg: 110 } }}>
                             <InputLabel>Hiển thị</InputLabel>
                             <Select

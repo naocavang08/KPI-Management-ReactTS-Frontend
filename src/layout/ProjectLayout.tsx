@@ -125,12 +125,6 @@ const navigationItems: NavigationItem[] = [
 		],
 	},
 	{
-		id: "reports",
-		label: "Reports",
-		icon: BarChart3,
-		disabled: true,
-	},
-	{
 		id: "tasks",
 		label: "Task Management",
 		icon: FolderKanban,

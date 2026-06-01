@@ -3,6 +3,9 @@ import {
 	Button,
 	Chip,
 	CssBaseline,
+	Dialog,
+	DialogContent,
+	DialogTitle,
 	Divider,
 	IconButton,
 	InputAdornment,
@@ -12,7 +15,9 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
+import { useState, type FormEvent } from "react";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { useForgotPassword, useResetPassword } from "../../hooks/usePasswordRecovery";
 import desginToken from "../../theme/desginToken";
 import { useLoginPage } from "./useLoginPage";
 
@@ -21,6 +26,13 @@ const { colors, components, elevation, radius, semantic, spacing, typography } =
 
 const LoginPage = () => {
 	const { form, onSubmit, isLoading, showPassword, togglePassword } = useLoginPage();
+	const forgotPassword = useForgotPassword();
+	const resetPassword = useResetPassword();
+	const [isRecoveryOpen, setIsRecoveryOpen] = useState(false);
+	const [recoveryStep, setRecoveryStep] = useState<"email" | "reset">("email");
+	const [email, setEmail] = useState("");
+	const [otp, setOtp] = useState("");
+	const [newPassword, setNewPassword] = useState("");
 	const {
 		register,
 		handleSubmit,
@@ -28,6 +40,31 @@ const LoginPage = () => {
 	} = form;
 
 	const loading = isLoading || isSubmitting;
+	const recoveryLoading = forgotPassword.isLoading || resetPassword.isLoading;
+
+	const closeRecovery = () => {
+		if (recoveryLoading) return;
+		setIsRecoveryOpen(false);
+		setRecoveryStep("email");
+		setOtp("");
+		setNewPassword("");
+	};
+
+	const handleForgotPassword = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		await forgotPassword.submit({ email: email.trim() });
+		setRecoveryStep("reset");
+	};
+
+	const handleResetPassword = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		await resetPassword.submit({
+			email: email.trim(),
+			otp: otp.trim(),
+			newPassword,
+		});
+		closeRecovery();
+	};
 
 	return (
 		<Box
@@ -284,9 +321,15 @@ const LoginPage = () => {
 									}}
 								>
 									<Link
-										href="#"
+										component="button"
+										type="button"
 										underline="hover"
+										onClick={() => setIsRecoveryOpen(true)}
 										sx={{
+											border: 0,
+											background: "none",
+											p: 0,
+											cursor: "pointer",
 											fontFamily: typography.bodySm.fontFamily,
 											fontSize: typography.bodySm.fontSize,
 											lineHeight: typography.bodySm.lineHeight,
@@ -353,6 +396,113 @@ const LoginPage = () => {
 					</Stack>
 				</Paper>
 			</Box>
+
+			<Dialog
+				open={isRecoveryOpen}
+				onClose={closeRecovery}
+				fullWidth
+				maxWidth="xs"
+				slotProps={{
+					paper: {
+						sx: {
+							borderRadius: radius.card,
+							border: elevation.level1.border,
+							boxShadow: elevation.level2.boxShadow,
+						},
+					},
+				}}
+			>
+				<DialogTitle
+					sx={{
+						fontFamily: typography.h2.fontFamily,
+						fontSize: typography.h2.fontSize,
+						fontWeight: typography.h2.fontWeight,
+						lineHeight: typography.h2.lineHeight,
+						color: colors.onSurface,
+						pb: spacing.xs,
+					}}
+				>
+					{recoveryStep === "email" ? "Forgot password" : "Reset password"}
+				</DialogTitle>
+				<DialogContent sx={{ pt: spacing.xs }}>
+					<Box
+						component="form"
+						noValidate
+						onSubmit={recoveryStep === "email" ? handleForgotPassword : handleResetPassword}
+					>
+						<Stack spacing={spacing.md}>
+							<Typography
+								sx={{
+									fontFamily: typography.bodySm.fontFamily,
+									fontSize: typography.bodySm.fontSize,
+									lineHeight: typography.bodySm.lineHeight,
+									color: colors.onSurfaceVariant,
+								}}
+							>
+								{recoveryStep === "email"
+									? "Enter your account email to receive an OTP."
+									: "Enter the OTP from your email and choose a new password."}
+							</Typography>
+
+							<TextField
+								label="Email"
+								type="email"
+								fullWidth
+								required
+								value={email}
+								disabled={recoveryStep === "reset" || recoveryLoading}
+								onChange={(event) => setEmail(event.target.value)}
+							/>
+
+							{recoveryStep === "reset" && (
+								<>
+									<TextField
+										label="OTP"
+										fullWidth
+										required
+										value={otp}
+										disabled={recoveryLoading}
+										onChange={(event) => setOtp(event.target.value)}
+									/>
+									<TextField
+										label="New password"
+										type="password"
+										fullWidth
+										required
+										value={newPassword}
+										disabled={recoveryLoading}
+										onChange={(event) => setNewPassword(event.target.value)}
+									/>
+								</>
+							)}
+
+							<Stack direction="row" spacing={spacing.sm} sx={{ justifyContent: "flex-end" }}>
+								<Button
+									type="button"
+									variant="outlined"
+									disabled={recoveryLoading}
+									onClick={closeRecovery}
+									sx={{ textTransform: "none", borderRadius: radius.button }}
+								>
+									Cancel
+								</Button>
+								<Button
+									type="submit"
+									variant="contained"
+									disabled={recoveryLoading}
+									sx={{ textTransform: "none", borderRadius: radius.button }}
+								>
+									{recoveryLoading
+										? "Please wait..."
+										: recoveryStep === "email"
+											? "Send OTP"
+											: "Reset password"}
+								</Button>
+							</Stack>
+						</Stack>
+					</Box>
+				</DialogContent>
+			</Dialog>
 		</Box>
 	);
 };

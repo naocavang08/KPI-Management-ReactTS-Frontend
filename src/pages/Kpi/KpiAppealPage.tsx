@@ -25,8 +25,10 @@ import {
 } from "@mui/material";
 import { CheckCircle2, ExternalLink, Loader2, Plus, RefreshCw, XCircle } from "lucide-react";
 import { createKpiAppeal, getKpiAppealHistory, getMyKpiAppeals, getPendingKpiAppeals, resolveKpiAppeal } from "../../api/kpi.api";
+import { getTeams } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
 import type { KpiAppeal, KpiAppealHistoryQuery, KpiAppealPagination, KpiAppealStatus, ResolveKpiAppealRequest } from "../../interfaces/kpi.types";
+import type { Team } from "../../interfaces/team.types";
 import { hasKpiAuthority } from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import desginToken from "../../theme/desginToken";
@@ -114,6 +116,7 @@ const KpiAppealPage = () => {
     const [myStatusFilter, setMyStatusFilter] = useState<"ALL" | KpiAppealStatus>("ALL");
     const [historyStatusFilter, setHistoryStatusFilter] = useState<KpiAppealHistoryQuery["status"]>("ALL");
     const [historyTeamId, setHistoryTeamId] = useState("");
+    const [teamOptions, setTeamOptions] = useState<Team[]>([]);
     const [historyPage, setHistoryPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [isMyLoading, setIsMyLoading] = useState(false);
@@ -134,6 +137,29 @@ const KpiAppealPage = () => {
     const canResolve = useMemo(
         () => hasKpiAuthority(currentUser, permissions, "KPI/APPEAL:RESOLVE"),
         [currentUser, permissions]
+    );
+
+    const loadTeamOptions = useCallback(async () => {
+        if (!canResolve) {
+            setTeamOptions([]);
+            return;
+        }
+
+        try {
+            const response = await getTeams({ page: 1, limit: 100 });
+            setTeamOptions(response.data);
+        } catch (err) {
+            error("Cannot load teams", getErrorMessage(err, "Please try again later"));
+        }
+    }, [canResolve, error]);
+
+    useEffect(() => {
+        void loadTeamOptions();
+    }, [loadTeamOptions]);
+
+    const hasCurrentUserTeamOption = useMemo(
+        () => currentUser?.teamId !== null && currentUser?.teamId !== undefined && !teamOptions.some((team) => team.id === currentUser.teamId),
+        [currentUser?.teamId, teamOptions]
     );
 
     const loadAppeals = useCallback(async () => {
@@ -184,7 +210,7 @@ const KpiAppealPage = () => {
             const normalizedTeamId = historyTeamId.trim();
             const parsedTeamId = normalizedTeamId ? Number(normalizedTeamId) : undefined;
             if (parsedTeamId !== undefined && (!Number.isInteger(parsedTeamId) || parsedTeamId <= 0)) {
-                error("Invalid Team ID", "Team ID must be a positive number");
+                error("Invalid team", "Please choose a valid team");
                 return;
             }
             const response = await getKpiAppealHistory({
@@ -513,17 +539,29 @@ const KpiAppealPage = () => {
                                 ))}
                             </TextField>
                             <TextField
-                                label="Team ID"
+                                select
+                                label="Team"
                                 size="small"
-                                type="number"
                                 value={historyTeamId}
                                 onChange={(event) => {
                                     setHistoryTeamId(event.target.value);
                                     setHistoryPage(1);
                                 }}
-                                sx={{ ...inputSx, minWidth: 150 }}
+                                sx={{ ...inputSx, minWidth: 220 }}
                                 disabled={!canResolve || isHistoryLoading}
-                            />
+                            >
+                                <MenuItem value="">All teams</MenuItem>
+                                {teamOptions.map((team) => (
+                                    <MenuItem key={team.id} value={String(team.id)}>
+                                        {team.name} ({team.code})
+                                    </MenuItem>
+                                ))}
+                                {hasCurrentUserTeamOption && (
+                                    <MenuItem value={String(currentUser?.teamId)}>
+                                        Team #{currentUser?.teamId}
+                                    </MenuItem>
+                                )}
+                            </TextField>
                         </Stack>
                     </Stack>
                 </Box>
