@@ -6,6 +6,7 @@ import {
     CircularProgress,
     Grid,
     IconButton,
+    MenuItem,
     Paper,
     Stack,
     Table,
@@ -20,8 +21,10 @@ import {
 } from "@mui/material";
 import { BarChart3, RefreshCw, Search, Target, Users } from "lucide-react";
 import { getTeamKpi, getUserKpi } from "../../api/kpi.api";
+import { getTeams } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
 import type { KpiRating, TeamKpiResponse, UserKpiResponse } from "../../interfaces/kpi.types";
+import type { Team } from "../../interfaces/team.types";
 import { hasKpiAuthority } from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import desginToken from "../../theme/desginToken";
@@ -70,7 +73,7 @@ const formatNumber = (value?: number | null) => {
 
 const formatPercent = (value?: number | null) => {
     if (typeof value !== "number" || Number.isNaN(value)) return "-";
-    return `${formatNumber(value * 100)}%`;
+    return `${formatNumber(value)}%`;
 };
 
 const StatCard = ({
@@ -130,8 +133,10 @@ const KpiScorePage = () => {
     const [teamYear, setTeamYear] = useState(String(currentYear));
     const [userKpi, setUserKpi] = useState<UserKpiResponse | null>(null);
     const [teamKpi, setTeamKpi] = useState<TeamKpiResponse | null>(null);
+    const [teamOptions, setTeamOptions] = useState<Team[]>([]);
     const [isUserLoading, setIsUserLoading] = useState(false);
     const [isTeamLoading, setIsTeamLoading] = useState(false);
+    const [isTeamsLoading, setIsTeamsLoading] = useState(false);
 
     const canViewSelf = useMemo(
         () => hasKpiAuthority(currentUser, permissions, "KPI:VIEW_SELF"),
@@ -148,6 +153,38 @@ const KpiScorePage = () => {
             setUserId(String(currentUser.id));
         }
     }, [currentUser?.id, userId]);
+
+    useEffect(() => {
+        if (!teamId && currentUser?.teamId) {
+            setTeamId(String(currentUser.teamId));
+        }
+    }, [currentUser?.teamId, teamId]);
+
+    const loadTeamOptions = useCallback(async () => {
+        if (!canViewTeam) {
+            setTeamOptions([]);
+            return;
+        }
+
+        try {
+            setIsTeamsLoading(true);
+            const response = await getTeams({ page: 1, limit: 100 });
+            setTeamOptions(response.data);
+        } catch (err) {
+            error("Cannot load teams", getErrorMessage(err, "Please try again later"));
+        } finally {
+            setIsTeamsLoading(false);
+        }
+    }, [canViewTeam, error]);
+
+    useEffect(() => {
+        void loadTeamOptions();
+    }, [loadTeamOptions]);
+
+    const hasCurrentUserTeamOption = useMemo(
+        () => currentUser?.teamId !== null && currentUser?.teamId !== undefined && !teamOptions.some((team) => team.id === currentUser.teamId),
+        [currentUser?.teamId, teamOptions]
+    );
 
     const loadUserKpi = useCallback(async () => {
         if (!canViewAnyKpi) {
@@ -183,16 +220,16 @@ const KpiScorePage = () => {
 
         const parsedMonth = Number(teamMonth);
         const parsedYear = Number(teamYear);
-        const normalizedTeamId = teamId.trim();
+        const parsedTeamId = Number(teamId);
 
-        if (!normalizedTeamId || parsedMonth < 1 || parsedMonth > 12 || !parsedYear) {
-            error("Invalid filters", "Team ID, month 1-12, and year are required");
+        if (!Number.isInteger(parsedTeamId) || parsedTeamId <= 0 || parsedMonth < 1 || parsedMonth > 12 || !parsedYear) {
+            error("Invalid filters", "Team, month 1-12, and year are required");
             return;
         }
 
         try {
             setIsTeamLoading(true);
-            const response = await getTeamKpi(normalizedTeamId, { month: parsedMonth, year: parsedYear });
+            const response = await getTeamKpi(parsedTeamId, { month: parsedMonth, year: parsedYear });
             setTeamKpi(response);
             success("Team KPI loaded", response.teamId);
         } catch (err) {
@@ -312,7 +349,27 @@ const KpiScorePage = () => {
             <Paper sx={{ borderRadius: radius.card, overflow: "hidden", border: elevation.level1.border, boxShadow: "none" }}>
                 <Box component="form" onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void loadTeamKpi(); }} sx={{ p: 2.5, bgcolor: colors.surfaceContainerLowest, borderBottom: `1px solid ${colors.surfaceContainerHighest}` }}>
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ alignItems: { md: "center" } }}>
-                        <TextField label="Team ID" size="small" value={teamId} onChange={(event) => setTeamId(event.target.value)} sx={{ ...inputSx, minWidth: { md: 180 } }} />
+                        <TextField
+                            select
+                            label="Team"
+                            size="small"
+                            value={teamId}
+                            onChange={(event) => setTeamId(event.target.value)}
+                            sx={{ ...inputSx, minWidth: { md: 220 } }}
+                            disabled={isTeamsLoading || !canViewTeam}
+                        >
+                            <MenuItem value="">Select team</MenuItem>
+                            {teamOptions.map((team) => (
+                                <MenuItem key={team.id} value={String(team.id)}>
+                                    {team.name} ({team.code})
+                                </MenuItem>
+                            ))}
+                            {hasCurrentUserTeamOption && (
+                                <MenuItem value={String(currentUser?.teamId)}>
+                                    Team #{currentUser?.teamId}
+                                </MenuItem>
+                            )}
+                        </TextField>
                         <TextField label="Month" size="small" type="number" value={teamMonth} onChange={(event) => setTeamMonth(event.target.value)} sx={{ ...inputSx, minWidth: { md: 120 } }} />
                         <TextField label="Year" size="small" type="number" value={teamYear} onChange={(event) => setTeamYear(event.target.value)} sx={{ ...inputSx, minWidth: { md: 140 } }} />
                         <Button type="submit" variant="contained" startIcon={isTeamLoading ? <CircularProgress size={16} color="inherit" /> : <Search size={16} />} disabled={isTeamLoading || !canViewTeam}>

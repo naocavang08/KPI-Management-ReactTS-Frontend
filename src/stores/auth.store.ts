@@ -51,7 +51,7 @@ const extractErrorMessage = (err: unknown, fallback: string) => {
     const errorWithResponse = err as {
         response?: {
             data?: {
-                error?: { message?: string; details?: string };
+                error?: string | { message?: string; details?: string };
                 message?: string;
                 details?: string;
             };
@@ -59,11 +59,20 @@ const extractErrorMessage = (err: unknown, fallback: string) => {
         message?: string;
     };
 
+    const data = errorWithResponse?.response?.data;
+    if (data) {
+        if (typeof data.error === 'string') {
+            return data.error;
+        }
+        if (data.error && typeof data.error === 'object') {
+            if (data.error.message) return data.error.message;
+            if (data.error.details) return data.error.details;
+        }
+        if (data.message) return data.message;
+        if (data.details) return data.details;
+    }
+
     return (
-        errorWithResponse?.response?.data?.error?.message ||
-        errorWithResponse?.response?.data?.error?.details ||
-        errorWithResponse?.response?.data?.message ||
-        errorWithResponse?.response?.data?.details ||
         (err instanceof Error ? err.message : errorWithResponse?.message) ||
         fallback
     );
@@ -173,6 +182,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 error: message,
                 isProfileLoading: false,
             });
+            get().logout();
             throw err;
         }
     },

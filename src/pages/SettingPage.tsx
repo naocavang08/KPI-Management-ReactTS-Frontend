@@ -1,23 +1,27 @@
 import { useState } from "react";
+import type { ElementType } from "react";
 import {
     Avatar,
     Box,
     Button,
     Chip,
-    Divider,
     Paper,
     Stack,
-    Switch,
     TextField,
     Typography,
 } from "@mui/material";
-import { BellRing, Link as LinkIcon, LockKeyhole, Mail, MessageSquare, Shield, User } from "lucide-react";
+import { BadgeCheck, BriefcaseBusiness, KeyRound, Mail, Save, ShieldCheck, User } from "lucide-react";
 import desginToken from "../theme/desginToken";
 import { useProfileSettings } from "./useProfileSettings";
 
 const { colors, components, elevation, radius, semantic, spacing, typography } = desginToken;
 
-const tabs = ["Basic information", "Change password", "Notification settings"] as const;
+const tabs = [
+    { value: "profile", label: "Thông tin cá nhân" },
+    { value: "password", label: "Đổi mật khẩu" },
+] as const;
+
+type SettingTab = (typeof tabs)[number]["value"];
 
 const inputSx = {
     "& .MuiInputBase-root": {
@@ -45,32 +49,43 @@ const readonlyInputSx = {
     "& .MuiInputBase-root": {
         ...inputSx["& .MuiInputBase-root"],
         backgroundColor: colors.surfaceContainerLow,
-        color: colors.outline,
+        color: colors.onSurfaceVariant,
     },
 };
 
 const labelSx = {
     display: "block",
     mb: spacing.base,
-    fontFamily: typography.labelCaps.fontFamily,
-    fontSize: typography.labelCaps.fontSize,
-    fontWeight: typography.labelCaps.fontWeight,
-    lineHeight: typography.labelCaps.lineHeight,
+    ...typography.labelCaps,
     letterSpacing: "0.08em",
-    textTransform: "uppercase",
     color: colors.outline,
 };
 
 const cardSx = {
     p: spacing.lg,
-    borderRadius: radius.xl,
+    borderRadius: radius.card,
     backgroundColor: colors.surfaceContainerLowest,
     border: elevation.level1.border,
-    boxShadow: elevation.level2.boxShadow,
+    boxShadow: elevation.level1.boxShadow,
+};
+
+const sectionTitleSx = {
+    ...typography.h2,
+    color: colors.onSurface,
+};
+
+const buttonSx = {
+    px: spacing.lg,
+    py: spacing.sm,
+    borderRadius: radius.button,
+    fontFamily: typography.bodySm.fontFamily,
+    fontSize: typography.bodySm.fontSize,
+    fontWeight: 700,
+    textTransform: "none",
 };
 
 const formatDateTime = (value?: string | null) => {
-    if (!value) return "Not recorded";
+    if (!value) return "Chưa ghi nhận";
 
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
@@ -81,13 +96,54 @@ const formatDateTime = (value?: string | null) => {
     }).format(date);
 };
 
+const formatEmpty = (value?: string | null) => value?.trim() || "Chưa cập nhật";
+
+type ReadonlyFieldProps = {
+    id: string;
+    label: string;
+    value?: string | null;
+};
+
+const ReadonlyField = ({ id, label, value }: ReadonlyFieldProps) => (
+    <Box>
+        <Typography component="label" htmlFor={id} sx={labelSx}>
+            {label}
+        </Typography>
+        <TextField id={id} fullWidth value={formatEmpty(value)} slotProps={{ input: { readOnly: true } }} sx={readonlyInputSx} />
+    </Box>
+);
+
+type SummaryItemProps = {
+    icon: ElementType;
+    label: string;
+    value: string;
+};
+
+const SummaryItem = ({ icon: Icon, label, value }: SummaryItemProps) => (
+    <Stack direction="row" spacing={spacing.sm} sx={{ alignItems: "flex-start" }}>
+        <Box
+            sx={{
+                display: "grid",
+                placeItems: "center",
+                width: 32,
+                height: 32,
+                flex: "0 0 32px",
+                borderRadius: radius.button,
+                backgroundColor: colors.surfaceContainerLow,
+                color: colors.primaryContainer,
+            }}
+        >
+            <Icon size={16} />
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ ...typography.bodySm, color: colors.outline }}>{label}</Typography>
+            <Typography sx={{ ...typography.bodyBase, color: colors.onSurface, overflowWrap: "anywhere" }}>{value}</Typography>
+        </Box>
+    </Stack>
+);
+
 const SettingPage = () => {
-    const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>(tabs[0]);
-    const [notificationConfig, setNotificationConfig] = useState({
-        email: true,
-        push: true,
-        browser: false,
-    });
+    const [activeTab, setActiveTab] = useState<SettingTab>("profile");
     const {
         user,
         profileForm,
@@ -103,90 +159,74 @@ const SettingPage = () => {
     } = useProfileSettings();
 
     const profileDisabled = isProfileLoading || isSavingProfile;
+    const isActive = Boolean(user?.isActive);
 
     return (
-        <Stack spacing={spacing.xl}>
-            <Box
-                sx={{
-                    display: "flex",
-                    gap: spacing.xl,
-                    borderBottom: `1px solid ${colors.outlineVariant}`,
-                    overflowX: "auto",
-                    whiteSpace: "nowrap",
-                }}
-            >
-                {tabs.map((tab) => {
-                    const isActive = tab === activeTab;
-                    return (
-                        <Box
-                            key={tab}
-                            component="button"
-                            type="button"
-                            onClick={() => setActiveTab(tab)}
-                            sx={{
-                                pb: spacing.sm,
-                                background: "transparent",
-                                border: "none",
-                                borderBottom: `2px solid ${isActive ? colors.primaryContainer : "transparent"}`,
-                                color: isActive ? colors.primaryContainer : colors.outline,
-                                cursor: "pointer",
-                                fontFamily: typography.bodyBase.fontFamily,
-                                fontSize: typography.bodyBase.fontSize,
-                                fontWeight: isActive ? 700 : 500,
-                                lineHeight: typography.bodyBase.lineHeight,
-                                transition: "color 0.2s ease, border-color 0.2s ease",
-                                "&:hover": {
-                                    color: colors.onSurface,
-                                },
-                            }}
-                        >
-                            {tab}
-                        </Box>
-                    );
-                })}
-            </Box>
-
-            {activeTab === "Basic information" && (
+        <Stack spacing={spacing.lg}>
+            <Paper elevation={0} sx={{ ...cardSx, p: 0, overflow: "hidden" }}>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 2fr) minmax(300px, 1fr)" },
-                        gap: spacing.lg,
+                        display: "flex",
+                        gap: spacing.base,
+                        p: spacing.xs,
+                        borderBottom: `1px solid ${colors.outlineVariant}`,
+                        overflowX: "auto",
                     }}
                 >
-                    <Paper elevation={0} sx={cardSx}>
+                    {tabs.map((tab) => {
+                        const selected = tab.value === activeTab;
+
+                        return (
+                            <Button
+                                key={tab.value}
+                                type="button"
+                                variant={selected ? "contained" : "text"}
+                                onClick={() => setActiveTab(tab.value)}
+                                sx={{
+                                    ...buttonSx,
+                                    flex: "0 0 auto",
+                                    minHeight: 36,
+                                    backgroundColor: selected ? colors.primaryContainer : "transparent",
+                                    color: selected ? colors.onPrimary : colors.onSurfaceVariant,
+                                    boxShadow: "none",
+                                    "&:hover": {
+                                        backgroundColor: selected ? colors.primary : colors.surfaceContainerLow,
+                                        boxShadow: "none",
+                                    },
+                                }}
+                            >
+                                {tab.label}
+                            </Button>
+                        );
+                    })}
+                </Box>
+
+                {activeTab === "profile" && (
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 320px" },
+                            gap: spacing.lg,
+                            p: spacing.lg,
+                        }}
+                    >
                         <Stack spacing={spacing.lg}>
                             <Stack
                                 direction={{ xs: "column", sm: "row" }}
                                 spacing={spacing.md}
                                 sx={{ justifyContent: "space-between", alignItems: { sm: "center" } }}
                             >
-                                <Typography
-                                    sx={{
-                                        fontFamily: typography.h2.fontFamily,
-                                        fontSize: typography.h2.fontSize,
-                                        fontWeight: typography.h2.fontWeight,
-                                        lineHeight: typography.h2.lineHeight,
-                                        color: colors.onSurface,
-                                    }}
-                                >
-                                    Employee profile
-                                </Typography>
+                                <Typography sx={sectionTitleSx}>Hồ sơ nhân viên</Typography>
                                 <Button
                                     variant="contained"
                                     disabled={profileDisabled}
+                                    startIcon={<Save size={16} />}
                                     onClick={() => void saveProfile()}
                                     sx={{
+                                        ...buttonSx,
                                         alignSelf: "flex-start",
-                                        px: spacing.lg,
-                                        py: spacing.sm,
-                                        borderRadius: radius.lg,
                                         backgroundColor: components.button.primary.background,
                                         color: components.button.primary.color,
-                                        fontFamily: typography.bodySm.fontFamily,
-                                        fontSize: typography.bodySm.fontSize,
-                                        fontWeight: 700,
-                                        textTransform: "none",
                                         boxShadow: "none",
                                         "&:hover": {
                                             backgroundColor: components.button.primary.hoverBackground,
@@ -194,41 +234,31 @@ const SettingPage = () => {
                                         },
                                     }}
                                 >
-                                    {isSavingProfile ? "Saving..." : "Save changes"}
+                                    {isSavingProfile ? "Đang lưu..." : "Lưu thay đổi"}
                                 </Button>
                             </Stack>
 
                             <Box
                                 sx={{
                                     display: "grid",
-                                    gridTemplateColumns: { xs: "1fr", md: "180px minmax(0, 1fr)" },
-                                    gap: spacing.xl,
+                                    gridTemplateColumns: { xs: "1fr", md: "140px minmax(0, 1fr)" },
+                                    gap: spacing.lg,
                                 }}
                             >
-                                <Stack spacing={spacing.md} sx={{ alignItems: "center" }}>
+                                <Stack spacing={spacing.sm} sx={{ alignItems: { xs: "flex-start", md: "center" } }}>
                                     <Avatar
                                         src={profileForm.avatarUrl}
+                                        alt={profileForm.fullname || user?.username || "User"}
                                         sx={{
-                                            width: 128,
-                                            height: 128,
-                                            border: `4px solid ${colors.surfaceContainer}`,
+                                            width: 112,
+                                            height: 112,
+                                            border: `1px solid ${colors.outlineVariant}`,
                                             bgcolor: colors.surfaceContainerHighest,
                                             color: colors.onSurfaceVariant,
                                         }}
                                     >
-                                        <User size={44} />
+                                        <User size={40} />
                                     </Avatar>
-                                    <Chip
-                                        icon={<LinkIcon size={14} />}
-                                        label="Avatar URL only"
-                                        sx={{
-                                            borderRadius: radius.chip,
-                                            backgroundColor: semantic.info.container,
-                                            color: semantic.info.onContainer,
-                                            fontFamily: typography.bodySm.fontFamily,
-                                            fontSize: typography.bodySm.fontSize,
-                                        }}
-                                    />
                                 </Stack>
 
                                 <Box
@@ -240,7 +270,7 @@ const SettingPage = () => {
                                 >
                                     <Box>
                                         <Typography component="label" htmlFor="fullname" sx={labelSx}>
-                                            Full name
+                                            Họ và tên
                                         </Typography>
                                         <TextField
                                             id="fullname"
@@ -251,395 +281,152 @@ const SettingPage = () => {
                                             sx={inputSx}
                                         />
                                     </Box>
-                                    <Box>
-                                        <Typography component="label" htmlFor="username" sx={labelSx}>
-                                            Username
-                                        </Typography>
-                                        <TextField
-                                            id="username"
-                                            fullWidth
-                                            value={user?.username ?? ""}
-                                            slotProps={{ input: { readOnly: true } }}
-                                            sx={readonlyInputSx}
-                                        />
-                                    </Box>
+                                    <ReadonlyField id="username" label="Tên đăng nhập" value={user?.username} />
                                     <Box sx={{ gridColumn: { md: "1 / -1" } }}>
                                         <Typography component="label" htmlFor="avatarUrl" sx={labelSx}>
-                                            Avatar URL
+                                            Ảnh đại diện
                                         </Typography>
                                         <TextField
                                             id="avatarUrl"
                                             fullWidth
                                             disabled={profileDisabled}
+                                            placeholder="https://..."
                                             value={profileForm.avatarUrl}
                                             onChange={(event) => updateProfileField("avatarUrl", event.target.value)}
                                             sx={inputSx}
                                         />
                                     </Box>
-                                    <Box>
-                                        <Typography component="label" htmlFor="email" sx={labelSx}>
-                                            Email
-                                        </Typography>
-                                        <TextField
-                                            id="email"
-                                            fullWidth
-                                            value={user?.email ?? ""}
-                                            slotProps={{ input: { readOnly: true } }}
-                                            sx={readonlyInputSx}
-                                        />
-                                    </Box>
-                                    <Box>
-                                        <Typography component="label" htmlFor="position" sx={labelSx}>
-                                            Position
-                                        </Typography>
-                                        <TextField
-                                            id="position"
-                                            fullWidth
-                                            value={user?.position ?? ""}
-                                            slotProps={{ input: { readOnly: true } }}
-                                            sx={readonlyInputSx}
-                                        />
-                                    </Box>
-                                    <Box>
-                                        <Typography component="label" htmlFor="type" sx={labelSx}>
-                                            Type
-                                        </Typography>
-                                        <TextField
-                                            id="type"
-                                            fullWidth
-                                            value={user?.type ?? ""}
-                                            slotProps={{ input: { readOnly: true } }}
-                                            sx={readonlyInputSx}
-                                        />
-                                    </Box>
-                                    <Box>
-                                        <Typography component="label" htmlFor="status" sx={labelSx}>
-                                            Status
-                                        </Typography>
-                                        <TextField
-                                            id="status"
-                                            fullWidth
-                                            value={user?.status ?? ""}
-                                            slotProps={{ input: { readOnly: true } }}
-                                            sx={readonlyInputSx}
-                                        />
-                                    </Box>
+                                    <ReadonlyField id="email" label="Email" value={user?.email} />
+                                    <ReadonlyField id="position" label="Chức vụ" value={user?.position} />
+                                    <ReadonlyField id="department" label="Phòng ban" value={user?.department} />
+                                    <ReadonlyField id="type" label="Loại nhân sự" value={user?.type} />
                                     <Box sx={{ gridColumn: { md: "1 / -1" } }}>
-                                        <Typography component="label" htmlFor="roles" sx={labelSx}>
-                                            Roles
-                                        </Typography>
-                                        <TextField
-                                            id="roles"
-                                            fullWidth
-                                            value={roleNames}
-                                            slotProps={{ input: { readOnly: true } }}
-                                            sx={readonlyInputSx}
-                                        />
+                                        <ReadonlyField id="roles" label="Vai trò" value={roleNames} />
                                     </Box>
                                 </Box>
                             </Box>
                         </Stack>
-                    </Paper>
-
-                    <Stack spacing={spacing.lg}>
-                        <Paper elevation={0} sx={cardSx}>
-                            <Stack spacing={spacing.md}>
-                                <Typography
-                                    sx={{
-                                        fontFamily: typography.h2.fontFamily,
-                                        fontSize: typography.h2.fontSize,
-                                        fontWeight: typography.h2.fontWeight,
-                                        lineHeight: typography.h2.lineHeight,
-                                        color: colors.onSurface,
-                                    }}
-                                >
-                                    Account status
-                                </Typography>
-                                <Chip
-                                    label={user?.isActive ? "Active account" : "Inactive account"}
-                                    sx={{
-                                        alignSelf: "flex-start",
-                                        borderRadius: radius.chip,
-                                        backgroundColor: user?.isActive
-                                            ? semantic.success.container
-                                            : semantic.warning.container,
-                                        color: user?.isActive
-                                            ? semantic.success.onContainer
-                                            : semantic.warning.onContainer,
-                                        fontWeight: 700,
-                                    }}
-                                />
-                                <Typography
-                                    sx={{
-                                        fontFamily: typography.bodySm.fontFamily,
-                                        fontSize: typography.bodySm.fontSize,
-                                        lineHeight: typography.bodySm.lineHeight,
-                                        color: colors.outline,
-                                    }}
-                                >
-                                    Last login: {formatDateTime(user?.lastLoginAt)}
-                                </Typography>
-                                {user?.lockReason && (
-                                    <Typography
-                                        sx={{
-                                            fontFamily: typography.bodySm.fontFamily,
-                                            fontSize: typography.bodySm.fontSize,
-                                            lineHeight: typography.bodySm.lineHeight,
-                                            color: colors.error,
-                                        }}
-                                    >
-                                        Lock reason: {user.lockReason}
-                                    </Typography>
-                                )}
-                            </Stack>
-                        </Paper>
 
                         <Paper
                             elevation={0}
                             sx={{
-                                ...cardSx,
-                                position: "relative",
-                                overflow: "hidden",
-                                backgroundColor: colors.primaryContainer,
-                                color: colors.onPrimary,
+                                p: spacing.md,
+                                borderRadius: radius.card,
+                                backgroundColor: colors.surfaceContainerLow,
+                                border: `1px solid ${colors.outlineVariant}`,
+                                alignSelf: "start",
                             }}
                         >
-                            <Box
-                                sx={{
-                                    position: "absolute",
-                                    right: -28,
-                                    bottom: -28,
-                                    opacity: 0.12,
-                                }}
-                            >
-                                <Shield size={144} />
-                            </Box>
-
-                            <Stack spacing={spacing.sm} sx={{ position: "relative", zIndex: 1 }}>
-                                <Typography
-                                    sx={{
-                                        fontFamily: typography.h2.fontFamily,
-                                        fontSize: typography.h2.fontSize,
-                                        fontWeight: typography.h2.fontWeight,
-                                        lineHeight: typography.h2.lineHeight,
-                                    }}
-                                >
-                                    Account security
-                                </Typography>
-                                <Typography
-                                    sx={{
-                                        maxWidth: 280,
-                                        fontFamily: typography.bodySm.fontFamily,
-                                        fontSize: typography.bodySm.fontSize,
-                                        lineHeight: typography.bodySm.lineHeight,
-                                        opacity: 0.84,
-                                    }}
-                                >
-                                    Profile changes are protected by your current access token.
-                                </Typography>
+                            <Stack spacing={spacing.md}>
+                                <Stack direction="row" spacing={spacing.sm} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                                    <Typography sx={sectionTitleSx}>Tổng quan</Typography>
+                                    <Chip
+                                        label={isActive ? "Không hoạt động" : "Đang hoạt động" }
+                                        sx={{
+                                            borderRadius: radius.chip,
+                                            backgroundColor: isActive ? semantic.success.container : semantic.warning.container,
+                                            color: isActive ? semantic.success.onContainer : semantic.warning.onContainer,
+                                            fontWeight: 700,
+                                        }}
+                                    />
+                                </Stack>
+                                <SummaryItem icon={BadgeCheck} label="Trạng thái" value={formatEmpty(user?.status)} />
+                                <SummaryItem icon={BriefcaseBusiness} label="Ngày tạo" value={formatDateTime(user?.createdAt)} />
+                                <SummaryItem icon={ShieldCheck} label="Đăng nhập gần nhất" value={formatDateTime(user?.lastLoginAt)} />
+                                <SummaryItem icon={Mail} label="Email" value={formatEmpty(user?.email)} />
+                                {user?.lockedUntil && <SummaryItem icon={KeyRound} label="Khóa đến" value={formatDateTime(user.lockedUntil)} />}
+                                {user?.lockReason && (
+                                    <Typography sx={{ ...typography.bodySm, color: colors.error, overflowWrap: "anywhere" }}>
+                                        Lý do khóa: {user.lockReason}
+                                    </Typography>
+                                )}
                             </Stack>
                         </Paper>
-                    </Stack>
-                </Box>
-            )}
+                    </Box>
+                )}
 
-            {activeTab === "Change password" && (
-                <Paper elevation={0} sx={cardSx}>
-                    <Stack spacing={spacing.lg}>
-                        <Stack direction="row" spacing={spacing.sm} sx={{ alignItems: "center" }}>
-                            <LockKeyhole size={18} color={colors.primaryContainer} />
-                            <Typography
-                                sx={{
-                                    fontFamily: typography.h2.fontFamily,
-                                    fontSize: typography.h2.fontSize,
-                                    fontWeight: typography.h2.fontWeight,
-                                    lineHeight: typography.h2.lineHeight,
-                                    color: colors.onSurface,
-                                }}
-                            >
-                                Change password
-                            </Typography>
-                        </Stack>
+                {activeTab === "password" && (
+                    <Box sx={{ p: spacing.lg }}>
+                        <Stack spacing={spacing.lg}>
+                            <Stack direction="row" spacing={spacing.sm} sx={{ alignItems: "center" }}>
+                                <KeyRound size={18} color={colors.primaryContainer} />
+                                <Typography sx={sectionTitleSx}>Đổi mật khẩu</Typography>
+                            </Stack>
 
-                        <Box
-                            sx={{
-                                display: "grid",
-                                gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
-                                gap: spacing.lg,
-                            }}
-                        >
-                            <Box>
-                                <Typography component="label" htmlFor="oldPassword" sx={labelSx}>
-                                    Current password
-                                </Typography>
-                                <TextField
-                                    id="oldPassword"
-                                    fullWidth
-                                    type="password"
-                                    autoComplete="current-password"
-                                    value={passwordForm.oldPassword}
-                                    onChange={(event) => updatePasswordField("oldPassword", event.target.value)}
-                                    sx={inputSx}
-                                />
-                            </Box>
-                            <Box>
-                                <Typography component="label" htmlFor="newPassword" sx={labelSx}>
-                                    New password
-                                </Typography>
-                                <TextField
-                                    id="newPassword"
-                                    fullWidth
-                                    type="password"
-                                    autoComplete="new-password"
-                                    value={passwordForm.newPassword}
-                                    onChange={(event) => updatePasswordField("newPassword", event.target.value)}
-                                    sx={inputSx}
-                                />
-                            </Box>
-                            <Box>
-                                <Typography component="label" htmlFor="confirmPassword" sx={labelSx}>
-                                    Confirm password
-                                </Typography>
-                                <TextField
-                                    id="confirmPassword"
-                                    fullWidth
-                                    type="password"
-                                    autoComplete="new-password"
-                                    value={passwordForm.confirmPassword}
-                                    onChange={(event) => updatePasswordField("confirmPassword", event.target.value)}
-                                    sx={inputSx}
-                                />
-                            </Box>
-                        </Box>
-
-                        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                            <Button
-                                variant="outlined"
-                                disabled={isSavingPassword}
-                                onClick={() => void savePassword()}
-                                sx={{
-                                    px: spacing.lg,
-                                    py: spacing.sm,
-                                    borderRadius: radius.lg,
-                                    borderColor: colors.outline,
-                                    color: colors.onSurface,
-                                    fontFamily: typography.bodySm.fontFamily,
-                                    fontSize: typography.bodySm.fontSize,
-                                    fontWeight: 700,
-                                    textTransform: "none",
-                                    "&:hover": {
-                                        borderColor: colors.outline,
-                                        backgroundColor: colors.surfaceContainer,
-                                    },
-                                }}
-                            >
-                                {isSavingPassword ? "Updating..." : "Update password"}
-                            </Button>
-                        </Box>
-                    </Stack>
-                </Paper>
-            )}
-
-            {activeTab === "Notification settings" && (
-                <Paper elevation={0} sx={cardSx}>
-                    <Stack spacing={spacing.lg}>
-                        <Typography
-                            sx={{
-                                fontFamily: typography.h2.fontFamily,
-                                fontSize: typography.h2.fontSize,
-                                fontWeight: typography.h2.fontWeight,
-                                lineHeight: typography.h2.lineHeight,
-                                color: colors.onSurface,
-                            }}
-                        >
-                            Notification settings
-                        </Typography>
-
-                        {[
-                            {
-                                key: "email" as const,
-                                icon: <Mail size={18} color={colors.secondary} />,
-                                title: "Email",
-                                description: "Weekly KPI reports",
-                            },
-                            {
-                                key: "push" as const,
-                                icon: <BellRing size={18} color={colors.tertiary} />,
-                                title: "Push notifications",
-                                description: "Manager updates",
-                            },
-                            {
-                                key: "browser" as const,
-                                icon: <MessageSquare size={18} color={colors.primaryContainer} />,
-                                title: "Browser",
-                                description: "KPI target alerts",
-                            },
-                        ].map((item) => (
                             <Box
-                                key={item.key}
                                 sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    gap: spacing.md,
-                                    p: spacing.md,
-                                    borderRadius: radius.lg,
-                                    backgroundColor: colors.surfaceContainerLow,
+                                    display: "grid",
+                                    gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+                                    gap: spacing.lg,
                                 }}
                             >
-                                <Stack direction="row" spacing={spacing.sm} sx={{ alignItems: "center" }}>
-                                    <Box>{item.icon}</Box>
-                                    <Box>
-                                        <Typography
-                                            sx={{
-                                                fontFamily: typography.bodyBase.fontFamily,
-                                                fontSize: typography.bodyBase.fontSize,
-                                                fontWeight: 700,
-                                                lineHeight: typography.bodyBase.lineHeight,
-                                                color: colors.onSurface,
-                                            }}
-                                        >
-                                            {item.title}
-                                        </Typography>
-                                        <Typography
-                                            sx={{
-                                                fontFamily: typography.bodySm.fontFamily,
-                                                fontSize: typography.bodySm.fontSize,
-                                                lineHeight: typography.bodySm.lineHeight,
-                                                color: colors.outline,
-                                            }}
-                                        >
-                                            {item.description}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                                <Switch
-                                    checked={notificationConfig[item.key]}
-                                    onChange={(_, checked) =>
-                                        setNotificationConfig((prev) => ({
-                                            ...prev,
-                                            [item.key]: checked,
-                                        }))
-                                    }
+                                <Box>
+                                    <Typography component="label" htmlFor="oldPassword" sx={labelSx}>
+                                        Mật khẩu hiện tại
+                                    </Typography>
+                                    <TextField
+                                        id="oldPassword"
+                                        fullWidth
+                                        type="password"
+                                        autoComplete="current-password"
+                                        value={passwordForm.oldPassword}
+                                        onChange={(event) => updatePasswordField("oldPassword", event.target.value)}
+                                        sx={inputSx}
+                                    />
+                                </Box>
+                                <Box>
+                                    <Typography component="label" htmlFor="newPassword" sx={labelSx}>
+                                        Mật khẩu mới
+                                    </Typography>
+                                    <TextField
+                                        id="newPassword"
+                                        fullWidth
+                                        type="password"
+                                        autoComplete="new-password"
+                                        value={passwordForm.newPassword}
+                                        onChange={(event) => updatePasswordField("newPassword", event.target.value)}
+                                        sx={inputSx}
+                                    />
+                                </Box>
+                                <Box>
+                                    <Typography component="label" htmlFor="confirmPassword" sx={labelSx}>
+                                        Xác nhận mật khẩu
+                                    </Typography>
+                                    <TextField
+                                        id="confirmPassword"
+                                        fullWidth
+                                        type="password"
+                                        autoComplete="new-password"
+                                        value={passwordForm.confirmPassword}
+                                        onChange={(event) => updatePasswordField("confirmPassword", event.target.value)}
+                                        sx={inputSx}
+                                    />
+                                </Box>
+                            </Box>
+
+                            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                                <Button
+                                    variant="outlined"
+                                    disabled={isSavingPassword}
+                                    startIcon={<KeyRound size={16} />}
+                                    onClick={() => void savePassword()}
                                     sx={{
-                                        "& .MuiSwitch-switchBase.Mui-checked": {
-                                            color: colors.primaryContainer,
-                                        },
-                                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                                            backgroundColor: colors.primaryContainer,
-                                        },
-                                        "& .MuiSwitch-track": {
-                                            backgroundColor: colors.outlineVariant,
+                                        ...buttonSx,
+                                        borderColor: colors.outline,
+                                        color: colors.onSurface,
+                                        "&:hover": {
+                                            borderColor: colors.primaryContainer,
+                                            backgroundColor: colors.surfaceContainerLow,
                                         },
                                     }}
-                                />
+                                >
+                                    {isSavingPassword ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+                                </Button>
                             </Box>
-                        ))}
-                    </Stack>
-                </Paper>
-            )}
-
-            <Divider sx={{ borderColor: colors.outlineVariant }} />
+                        </Stack>
+                    </Box>
+                )}
+            </Paper>
         </Stack>
     );
 };

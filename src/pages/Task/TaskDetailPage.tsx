@@ -45,8 +45,20 @@ import {
     updateTaskProgress,
 } from "../../api/task.api";
 import { getUsers } from "../../api/user.api";
+import { getTeamMembers } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
-import { hasTaskAuthority } from "../../lib/permissions";
+import {
+    canApproveTask,
+    canApproveTaskExtension,
+    canDeleteTask,
+    canRejectTask,
+    canRequestTaskExtension,
+    canSubmitTask,
+    canUpdateTask,
+    canUpdateTaskProgress,
+    hasAuthority,
+    hasRole,
+} from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import type { Task, TaskHistoryEntry, TaskPriority, TaskStatus, UpdateTaskRequest } from "../../interfaces/task.types";
 import type { ManagedUser } from "../../interfaces/user.types";
@@ -54,7 +66,6 @@ import desginToken from "../../theme/desginToken";
 
 const { colors, components, elevation, radius, semantic, spacing, typography } = desginToken;
 
-const taskStatuses: TaskStatus[] = ["ASSIGNED", "IN_PROGRESS", "PENDING_REVIEW", "COMPLETED", "OVERDUE"];
 const taskPriorities: TaskPriority[] = ["LOW", "MEDIUM", "HIGH"];
 
 type TaskForm = {
@@ -67,7 +78,6 @@ type TaskForm = {
 };
 
 type ProgressForm = {
-    status: TaskStatus;
     progress: string;
 };
 
@@ -201,7 +211,7 @@ const TaskDetailPage = () => {
     const [editOpen, setEditOpen] = useState(false);
     const [form, setForm] = useState<TaskForm>(emptyForm);
     const [progressOpen, setProgressOpen] = useState(false);
-    const [progressForm, setProgressForm] = useState<ProgressForm>({ status: "IN_PROGRESS", progress: "0" });
+    const [progressForm, setProgressForm] = useState<ProgressForm>({ progress: "0" });
     const [submitOpen, setSubmitOpen] = useState(false);
     const [evidence, setEvidence] = useState("");
     const [rejectOpen, setRejectOpen] = useState(false);
@@ -214,14 +224,14 @@ const TaskDetailPage = () => {
     const [extensionApproved, setExtensionApproved] = useState("true");
     const [managerNote, setManagerNote] = useState("");
     const taskPermissions = {
-        update: hasTaskAuthority(currentUser, permissions, "UPDATE"),
-        delete: hasTaskAuthority(currentUser, permissions, "DELETE"),
-        approve: hasTaskAuthority(currentUser, permissions, "APPROVE"),
-        reject: hasTaskAuthority(currentUser, permissions, "REJECT"),
-        updateProgress: hasTaskAuthority(currentUser, permissions, "UPDATE_PROGRESS"),
-        submit: hasTaskAuthority(currentUser, permissions, "SUBMIT"),
-        extend: hasTaskAuthority(currentUser, permissions, "EXTEND"),
-        approveExtension: hasTaskAuthority(currentUser, permissions, "APPROVE_EXTENSION"),
+        update: canUpdateTask(currentUser, permissions, task),
+        delete: canDeleteTask(currentUser, permissions, task),
+        approve: canApproveTask(currentUser, permissions, task),
+        reject: canRejectTask(currentUser, permissions, task),
+        updateProgress: canUpdateTaskProgress(currentUser, permissions, task),
+        submit: canSubmitTask(currentUser, permissions, task),
+        extend: canRequestTaskExtension(currentUser, permissions, task),
+        approveExtension: canApproveTaskExtension(currentUser, permissions, task),
     };
 
     const loadTask = useCallback(async () => {
@@ -239,16 +249,30 @@ const TaskDetailPage = () => {
     }, [error, taskId]);
 
     const loadAssignees = useCallback(async () => {
-        try {
-            setIsUsersLoading(true);
-            const response = await getUsers({ page: 1, limit: 100, status: "ACTIVE" });
-            setAssignees(response.data);
-        } catch (err) {
-            error("Không tải được danh sách người dùng", getErrorMessage(err, "Vui lòng thử lại sau"));
-        } finally {
-            setIsUsersLoading(false);
+        if (hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:VIEW")) {
+            try {
+                setIsUsersLoading(true);
+                const response = await getUsers({ page: 1, limit: 100, status: "ACTIVE" });
+                setAssignees(response.data);
+            } catch (err) {
+                error("Không tải được danh sách người dùng", getErrorMessage(err, "Vui lòng thử lại sau"));
+            } finally {
+                setIsUsersLoading(false);
+            }
+        } else if (currentUser?.teamId !== null && currentUser?.teamId !== undefined && hasAuthority(currentUser, permissions, "TEAM:VIEW")) {
+            try {
+                setIsUsersLoading(true);
+                const response = await getTeamMembers(currentUser.teamId, { page: 1, limit: 100 });
+                setAssignees(response.data);
+            } catch (err) {
+                error("Không tải được danh sách thành viên team", getErrorMessage(err, "Vui lòng thử lại sau"));
+            } finally {
+                setIsUsersLoading(false);
+            }
+        } else {
+            setAssignees([]);
         }
-    }, [error]);
+    }, [currentUser, permissions, error]);
 
     const loadHistory = useCallback(async () => {
         if (!taskId) return;
@@ -265,16 +289,28 @@ const TaskDetailPage = () => {
     }, [error, taskId]);
 
     useEffect(() => {
-        void loadTask();
-    }, [loadTask]);
+        void Promise.all([loadTask(), loadHistory()]);
+    }, [loadTask, loadHistory]);
+
+    useEffect(() => {
+        const refreshWhenVisible = () => {
+            if (document.visibilityState === "visible") {
+                void Promise.all([loadTask(), loadHistory()]);
+            }
+        };
+
+        window.addEventListener("focus", refreshWhenVisible);
+        document.addEventListener("visibilitychange", refreshWhenVisible);
+
+        return () => {
+            window.removeEventListener("focus", refreshWhenVisible);
+            document.removeEventListener("visibilitychange", refreshWhenVisible);
+        };
+    }, [loadTask, loadHistory]);
 
     useEffect(() => {
         void loadAssignees();
     }, [loadAssignees]);
-
-    useEffect(() => {
-        void loadHistory();
-    }, [loadHistory]);
 
     const handleFormChange = <K extends keyof TaskForm>(field: K, value: TaskForm[K]) => {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -324,7 +360,7 @@ const TaskDetailPage = () => {
 
     const openProgressDialog = () => {
         if (!task) return;
-        setProgressForm({ status: task.status, progress: String(task.progress ?? 0) });
+        setProgressForm({ progress: String(Math.min(task.progress ?? 0, 99)) });
         setProgressOpen(true);
     };
 
@@ -332,14 +368,14 @@ const TaskDetailPage = () => {
         if (!task) return;
         const progress = Number(progressForm.progress);
 
-        if (Number.isNaN(progress) || progress < 0 || progress > 100) {
-            error("Tiến độ không hợp lệ", "Vui lòng nhập giá trị từ 0 đến 100");
+        if (!Number.isInteger(progress) || progress < 0 || progress > 99) {
+            error("Tiến độ không hợp lệ", "Vui lòng nhập giá trị từ 0 đến 99. Dùng Nộp báo cáo để hoàn thành task.");
             return;
         }
 
         try {
             setIsSubmitting(true);
-            await updateTaskProgress(task.id, { status: progressForm.status, progress });
+            await updateTaskProgress(task.id, { status: "IN_PROGRESS", progress });
             success("Đã cập nhật tiến độ", task.title);
             setProgressOpen(false);
             await loadTask();
@@ -697,13 +733,8 @@ const TaskDetailPage = () => {
                 <DialogTitle>Cập nhật tiến độ</DialogTitle>
                 <DialogContent>
                     <Stack spacing={2} sx={{ pt: 1 }}>
-                        <FormControl fullWidth>
-                            <InputLabel>Trạng thái</InputLabel>
-                            <Select value={progressForm.status} label="Trạng thái" onChange={(event: SelectChangeEvent) => setProgressForm((prev) => ({ ...prev, status: event.target.value as TaskStatus }))}>
-                                {taskStatuses.map((status) => <MenuItem key={status} value={status}>{getStatusLabel(status)}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-                        <TextField label="Tiến độ (%)" type="number" value={progressForm.progress} onChange={(event) => setProgressForm((prev) => ({ ...prev, progress: event.target.value }))} fullWidth sx={inputSx} />
+                        <TextField label="Trạng thái" value={getStatusLabel("IN_PROGRESS")} fullWidth sx={inputSx} disabled />
+                        <TextField label="Tiến độ (%)" type="number" value={progressForm.progress} onChange={(event) => setProgressForm({ progress: event.target.value })} fullWidth sx={inputSx} slotProps={{ htmlInput: { min: 0, max: 99, step: 1 } }} />
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 3 }}>

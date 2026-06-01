@@ -19,22 +19,26 @@ import {
 import {
 	BarChart3,
 	Bell,
+	Building2,
 	ChevronDown,
 	ChevronRight,
 	CircleHelp,
 	ClipboardCheck,
+	Download,
 	FolderKanban,
-	LayoutDashboard,
 	LogOut,
 	Menu as MenuIcon,
+	Scale,
 	Settings,
 	Shield,
 	Target,
 	User,
 	Users,
+	MessageSquareWarning,
 } from "lucide-react";
 import { useAuthStore } from "../stores/auth.store";
 import desginToken from "../theme/desginToken";
+import { hasRole, hasAuthority } from "../lib/permissions";
 
 const { colors, elevation, layout, radius, semantic, spacing, typography } = desginToken;
 
@@ -44,7 +48,16 @@ type NavigationItem = {
 	icon: React.ElementType;
 	path?: string;
 	disabled?: boolean;
-	children?: { id: string; label: string; icon?: React.ElementType; path: string }[];
+	requiredPermission?: string | string[];
+	requiredRole?: string;
+	children?: { 
+		id: string; 
+		label: string; 
+		icon?: React.ElementType; 
+		path: string;
+		requiredPermission?: string | string[];
+		requiredRole?: string;
+	}[];
 };
 
 const navigationItems: NavigationItem[] = [
@@ -54,22 +67,18 @@ const navigationItems: NavigationItem[] = [
 		icon: Users,
 		children: [
 			{
-				id: "dashboard",
-				label: "Dashboard",
-				icon: LayoutDashboard,
-				path: "/dashboard",
-			},
-			{
 				id: "admin-users",
 				label: "User",
 				icon: User,
-				path: "/admin/user"
+				path: "/admin/user",
+				requiredPermission: "USER:VIEW",
 			},
 			{
 				id: "admin-roles",
 				label: "Role",
 				icon: Shield,
-				path: "/admin/role"
+				path: "/admin/role",
+				requiredPermission: "ROLE:VIEW",
 			},
 		],
 	},
@@ -83,26 +92,51 @@ const navigationItems: NavigationItem[] = [
 				label: "KPI Scores",
 				icon: BarChart3,
 				path: "/kpi/scores",
+				requiredPermission: ["KPI:VIEW_SELF", "KPI:VIEW_TEAM"],
 			},
 			{
 				id: "kpi-reviews",
 				label: "KPI Reviews",
 				icon: ClipboardCheck,
 				path: "/kpi/reviews",
+				requiredPermission: ["KPI/REVIEW:CREATE", "KPI/REVIEW:UPDATE", "KPI/REVIEW:DELETE"],
+			},
+			{
+				id: "kpi-appeals",
+				label: "KPI Appeals",
+				icon: MessageSquareWarning,
+				path: "/kpi/appeals",
+				requiredPermission: ["KPI/APPEAL:CREATE", "KPI/APPEAL:RESOLVE"],
+			},
+			{
+				id: "kpi-weights",
+				label: "KPI Weights",
+				icon: Scale,
+				path: "/kpi/weights",
+				requiredPermission: "KPI/WEIGHT:UPDATE",
+			},
+			{
+				id: "kpi-export",
+				label: "KPI Export",
+				icon: Download,
+				path: "/kpi/export",
+				requiredPermission: "KPI/REPORT:EXPORT",
 			},
 		],
-	},
-	{
-		id: "reports",
-		label: "Reports",
-		icon: BarChart3,
-		disabled: true,
 	},
 	{
 		id: "tasks",
 		label: "Task Management",
 		icon: FolderKanban,
 		path: "/tasks",
+		requiredPermission: "KPI/TASK:VIEW",
+	},
+	{
+		id: "teams",
+		label: "Team Management",
+		icon: Building2,
+		path: "/teams",
+		requiredPermission: "TEAM:VIEW",
 	},
 	{
 		id: "settings",
@@ -121,10 +155,34 @@ const ProjectLayout = () => {
 	const location = useLocation();
 	const logout = useAuthStore((state) => state.logout);
 	const userInfo = useAuthStore((state) => state.user);
+	const permissions = useAuthStore((state) => state.permissions);
 	const fetchMe = useAuthStore((state) => state.fetchMe);
 	const isLoading = useAuthStore((state) => state.isProfileLoading);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
+	const visibleNavigationItems = useMemo(() => {
+		const checkItem = (item: { requiredPermission?: string | string[]; requiredRole?: string }) => {
+			if (!item.requiredPermission && !item.requiredRole) return true;
+			if (item.requiredRole && hasRole(userInfo, item.requiredRole)) return true;
+			if (item.requiredPermission) {
+				const perms = Array.isArray(item.requiredPermission) ? item.requiredPermission : [item.requiredPermission];
+				return perms.some(p => hasAuthority(userInfo, permissions, p));
+			}
+			return false;
+		};
+		return navigationItems
+			.map(item => {
+				if (item.children) {
+					const visibleChildren = item.children.filter(checkItem);
+					if (visibleChildren.length === 0) return null;
+					return { ...item, children: visibleChildren };
+				}
+				return checkItem(item) ? item : null;
+			})
+			.filter((item): item is NavigationItem => item !== null);
+	}, [userInfo, permissions]);
+
 	const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => {
 		const initial: Record<string, boolean> = {};
 		navigationItems.forEach((item) => {
@@ -135,6 +193,17 @@ const ProjectLayout = () => {
 		return initial;
 	});
 
+	useEffect(() => {
+		visibleNavigationItems.forEach((item) => {
+			if (item.children?.some((child) => child.path === location.pathname)) {
+				setExpandedItems((prev) => {
+					if (prev[item.id]) return prev;
+					return { ...prev, [item.id]: true };
+				});
+			}
+		});
+	}, [location.pathname, visibleNavigationItems]);
+
 	const toggleExpand = (id: string, e: React.MouseEvent) => {
 		e.preventDefault();
 		setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -142,7 +211,7 @@ const ProjectLayout = () => {
 
 	const activeItem = useMemo(
 		() => {
-			for (const item of navigationItems) {
+			for (const item of visibleNavigationItems) {
 				if (item.path === location.pathname) return item;
 				if (item.children) {
 					const child = item.children.find(c => c.path === location.pathname);
@@ -151,7 +220,7 @@ const ProjectLayout = () => {
 			}
 			return undefined;
 		},
-		[location.pathname]
+		[location.pathname, visibleNavigationItems]
 	);
 
 	const userName = useMemo(() => {
@@ -254,7 +323,7 @@ const ProjectLayout = () => {
 
 			<Box sx={{ px: spacing.md, pb: spacing.md }}>
 				<Stack spacing="4px">
-					{navigationItems.map((item) => {
+					{visibleNavigationItems.map((item) => {
 						const Icon = item.icon;
 						const isActive = item.path === location.pathname;
 

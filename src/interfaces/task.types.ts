@@ -17,6 +17,8 @@ export interface Task {
     progress: number;
     tags?: string[] | null;
     evidence?: string | null;
+    teamId: number;
+    isDeleted?: boolean;
     createdAt?: string | null;
     updatedAt?: string | null;
 }
@@ -40,7 +42,19 @@ export interface TaskListQuery {
     status?: TaskStatus;
     priority?: TaskPriority;
     assigneeId?: number;
-    teamId?: string;
+    teamId?: number;
+}
+
+export interface TeamTaskListQuery {
+    page?: number;
+    limit?: number;
+    status?: TaskStatus;
+}
+
+export interface TrashTaskListQuery {
+    teamId?: number;
+    page?: number;
+    limit?: number;
 }
 
 export interface CreateTaskRequest {
@@ -49,6 +63,7 @@ export interface CreateTaskRequest {
     assigneeId: number;
     deadline: string;
     priority: TaskPriority;
+    teamId: number;
 }
 
 export interface UpdateTaskRequest {
@@ -65,7 +80,7 @@ export interface RejectTaskRequest {
 }
 
 export interface UpdateTaskProgressRequest {
-    status: TaskStatus;
+    status: "IN_PROGRESS";
     progress: number;
 }
 
@@ -91,6 +106,12 @@ export interface TaskHistoryEntry {
     createdAt: string;
 }
 
-export type TaskSummary = Record<TaskStatus, number>;
+export interface TaskSummary {
+    assigned: number;
+    inProgress: number;
+    pendingReview: number;
+    completed: number;
+    overdue: number;
+}
 
 export type TaskMessageResponse = ApiMessageResponse;

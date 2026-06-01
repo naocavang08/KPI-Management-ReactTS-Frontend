@@ -56,8 +56,12 @@ import {
     updateUser,
 } from "../../api/user.api";
 import { getRoles } from "../../api/role.api";
+import { getTeams } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
+import { useAuthStore } from "../../stores/auth.store";
+import { hasRole, hasAuthority } from "../../lib/permissions";
 import type { AuthRole, UserStatus, UserType } from "../../interfaces/auth.types";
+import type { Team } from "../../interfaces/team.types";
 import type { CreateUserRequest, ManagedUser, UpdateUserRequest, UserPagination } from "../../interfaces/user.types";
 import desginToken from "../../theme/desginToken";
 
@@ -74,6 +78,7 @@ type UserForm = {
     position: string;
     type: UserType;
     avatar: string;
+    teamId: string;
     status: UserStatus;
     lockedUntil: string;
 };
@@ -85,6 +90,7 @@ const emptyForm: UserForm = {
     position: "",
     type: "STAFF",
     avatar: "",
+    teamId: "",
     status: "ACTIVE",
     lockedUntil: "",
 };
@@ -148,11 +154,32 @@ const buildFormFromUser = (user: ManagedUser): UserForm => ({
     position: user.position ?? "",
     type: user.type,
     avatar: user.avatarUrl ?? "",
+    teamId: user.teamId ? String(user.teamId) : "",
     status: user.status,
     lockedUntil: user.lockedUntil ?? "",
 });
 
 const UserPage = () => {
+    const currentUser = useAuthStore((state) => state.user);
+    const permissions = useAuthStore((state) => state.permissions);
+
+    const canView = useMemo(
+        () => hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:VIEW"),
+        [currentUser, permissions]
+    );
+    const canCreate = useMemo(
+        () => hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:CREATE"),
+        [currentUser, permissions]
+    );
+    const canUpdate = useMemo(
+        () => hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:UPDATE"),
+        [currentUser, permissions]
+    );
+    const canDelete = useMemo(
+        () => hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:DELETE"),
+        [currentUser, permissions]
+    );
+
     const [users, setUsers] = useState<ManagedUser[]>([]);
     const [pagination, setPagination] = useState<UserPagination>(emptyPagination);
     const [searchTerm, setSearchTerm] = useState("");
@@ -171,6 +198,8 @@ const UserPage = () => {
     const [lockReason, setLockReason] = useState("");
     const [roleTarget, setRoleTarget] = useState<ManagedUser | null>(null);
     const [availableRoles, setAvailableRoles] = useState<AuthRole[]>([]);
+    const [teamOptions, setTeamOptions] = useState<Team[]>([]);
+    const [isTeamsLoading, setIsTeamsLoading] = useState(false);
     const [userRoles, setUserRoles] = useState<AuthRole[]>([]);
     const [selectedRoleId, setSelectedRoleId] = useState("");
     const [isRoleLoading, setIsRoleLoading] = useState(false);
@@ -186,6 +215,11 @@ const UserPage = () => {
     }, [searchTerm]);
 
     const loadUsers = useCallback(async () => {
+        if (!canView) {
+            setUsers([]);
+            setPagination(emptyPagination);
+            return;
+        }
         try {
             setIsLoading(true);
             const keyword = debouncedSearch.trim();
@@ -204,7 +238,7 @@ const UserPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [debouncedSearch, error, limit, page, statusFilter]);
+    }, [canView, debouncedSearch, error, limit, page, statusFilter]);
 
     useEffect(() => {
         void loadUsers();
@@ -229,13 +263,14 @@ const UserPage = () => {
     const openCreateDialog = () => {
         setForm(emptyForm);
         setUserDialogMode("create");
+        void loadTeamOptions();
     };
 
     const openEditDialog = async (user: ManagedUser) => {
         closeActionMenu();
         try {
             setIsSubmitting(true);
-            const detail = await getUserById(user.id);
+            const [detail] = await Promise.all([getUserById(user.id), loadTeamOptions()]);
             setForm(buildFormFromUser(detail));
             setActionUser(detail);
             setUserDialogMode("edit");
@@ -256,6 +291,22 @@ const UserPage = () => {
         setForm((prev) => ({ ...prev, [field]: value }));
     };
 
+    const loadTeamOptions = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasAuthority(currentUser, permissions, "TEAM:VIEW")) {
+            setTeamOptions([]);
+            return;
+        }
+        try {
+            setIsTeamsLoading(true);
+            const response = await getTeams({ page: 1, limit: 100 });
+            setTeamOptions(response.data);
+        } catch (err) {
+            error("Không tải được phòng ban", getErrorMessage(err, "Vui lòng thử lại sau"));
+        } finally {
+            setIsTeamsLoading(false);
+        }
+    }, [currentUser, permissions, error]);
+
     const submitUserForm = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const fullName = form.fullName.trim();
@@ -263,6 +314,7 @@ const UserPage = () => {
         const email = form.email.trim();
         const position = form.position.trim();
         const avatar = form.avatar.trim();
+        const teamId = form.teamId ? Number(form.teamId) : undefined;
 
         if (!fullName || !position || (userDialogMode === "create" && (!username || !email))) {
             error("Thiếu thông tin", "Vui lòng nhập username, tên, email và vị trí");
@@ -279,6 +331,7 @@ const UserPage = () => {
                     position,
                     type: form.type,
                     avatar: avatar || undefined,
+                    teamId,
                 };
                 await createUser(payload);
                 success("Đã tạo người dùng", "Danh sách người dùng đã được cập nhật");
@@ -290,6 +343,7 @@ const UserPage = () => {
                     avatar: avatar || undefined,
                     status: form.status,
                     lockedUntil: form.lockedUntil.trim() || null,
+                    teamId: teamId ?? null,
                 };
                 await updateUser(actionUser.id, payload);
                 success("Đã cập nhật người dùng", "Thông tin người dùng đã được lưu");
@@ -425,21 +479,23 @@ const UserPage = () => {
                         Có tổng cộng {pagination.totalElements} người dùng trong hệ thống
                     </Typography>
                 </Box>
-                <Button
-                    variant="contained"
-                    startIcon={<UserPlus size={18} />}
-                    onClick={openCreateDialog}
-                    sx={{
-                        borderRadius: radius.lg,
-                        textTransform: "none",
-                        px: 3,
-                        py: 1.2,
-                        fontWeight: 700,
-                        boxShadow: "none",
-                    }}
-                >
-                    Thêm người dùng
-                </Button>
+                {canCreate && (
+                    <Button
+                        variant="contained"
+                        startIcon={<UserPlus size={18} />}
+                        onClick={openCreateDialog}
+                        sx={{
+                            borderRadius: radius.lg,
+                            textTransform: "none",
+                            px: 3,
+                            py: 1.2,
+                            fontWeight: 700,
+                            boxShadow: "none",
+                        }}
+                    >
+                        Thêm người dùng
+                    </Button>
+                )}
             </Stack>
 
             <Paper sx={{ borderRadius: radius.xl, overflow: "hidden", border: elevation.level1.border, boxShadow: elevation.level2.boxShadow }}>
@@ -451,6 +507,7 @@ const UserPage = () => {
                             fullWidth
                             value={searchTerm}
                             onChange={(event) => setSearchTerm(event.target.value)}
+                            disabled={!canView}
                             sx={inputSx}
                             slotProps={{
                                 input: {
@@ -462,7 +519,7 @@ const UserPage = () => {
                                 },
                             }}
                         />
-                        <FormControl size="small" sx={{ minWidth: { xs: "100%", md: 170 } }}>
+                        <FormControl size="small" sx={{ minWidth: { xs: "100%", md: 170 } }} disabled={!canView}>
                             <InputLabel>Trạng thái</InputLabel>
                             <Select
                                 value={statusFilter}
@@ -479,7 +536,7 @@ const UserPage = () => {
                                 ))}
                             </Select>
                         </FormControl>
-                        <FormControl size="small" sx={{ minWidth: { xs: "100%", md: 120 } }}>
+                        <FormControl size="small" sx={{ minWidth: { xs: "100%", md: 120 } }} disabled={!canView}>
                             <InputLabel>Hiển thị</InputLabel>
                             <Select
                                 value={String(limit)}
@@ -514,7 +571,13 @@ const UserPage = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {isLoading ? (
+                            {!canView ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                                        <Typography color="text.secondary">Requires USER:VIEW or ADMIN to view user data.</Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                                         <CircularProgress size={28} />
@@ -557,10 +620,12 @@ const UserPage = () => {
                                             </Stack>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <Tooltip title="Chỉnh sửa">
-                                                <IconButton size="small" onClick={() => void openEditDialog(user)} disabled={isSubmitting}>
-                                                    <Edit2 size={16} />
-                                                </IconButton>
+                                            <Tooltip title={canUpdate ? "Chỉnh sửa" : "Requires USER:UPDATE or ADMIN"}>
+                                                <span>
+                                                    <IconButton size="small" onClick={() => void openEditDialog(user)} disabled={!canUpdate || isSubmitting}>
+                                                        <Edit2 size={16} />
+                                                    </IconButton>
+                                                </span>
                                             </Tooltip>
                                             <IconButton
                                                 size="small"
@@ -597,31 +662,33 @@ const UserPage = () => {
                         shape="rounded"
                         size="small"
                         color="primary"
+                        disabled={!canView}
                     />
                 </Box>
             </Paper>
 
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeActionMenu}>
-                <MenuItem onClick={() => actionUser && void openEditDialog(actionUser)}>
+                <MenuItem disabled={!canUpdate} onClick={() => actionUser && void openEditDialog(actionUser)}>
                     <Edit2 size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Chỉnh sửa</Typography>
                 </MenuItem>
-                <MenuItem onClick={() => actionUser && void openRoleDialog(actionUser)}>
+                <MenuItem disabled={!hasRole(currentUser, "ADMIN") && !hasAuthority(currentUser, permissions, "ROLE:ASSIGN")} onClick={() => actionUser && void openRoleDialog(actionUser)}>
                     <UserCog size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Quản lý vai trò</Typography>
                 </MenuItem>
                 {actionUser?.status === "LOCKED" ? (
-                    <MenuItem onClick={() => actionUser && void confirmUnlockUser(actionUser)}>
+                    <MenuItem disabled={!canUpdate} onClick={() => actionUser && void confirmUnlockUser(actionUser)}>
                         <LockOpen size={16} />
                         <Typography sx={{ ml: 1.5 }} variant="body2">Mở khóa</Typography>
                     </MenuItem>
                 ) : (
-                    <MenuItem onClick={() => actionUser && openLockDialog(actionUser)}>
+                    <MenuItem disabled={!canUpdate || Boolean(currentUser && actionUser && currentUser.id === actionUser.id)} onClick={() => actionUser && openLockDialog(actionUser)}>
                         <Ban size={16} />
                         <Typography sx={{ ml: 1.5 }} variant="body2">Khóa tài khoản</Typography>
                     </MenuItem>
                 )}
                 <MenuItem
+                    disabled={!canDelete || Boolean(currentUser && actionUser && currentUser.id === actionUser.id)}
                     onClick={() => {
                         if (actionUser) setDeleteTarget(actionUser);
                         closeActionMenu();
@@ -649,6 +716,22 @@ const UserPage = () => {
                                 </Select>
                             </FormControl>
                             <TextField label="Avatar URL" value={form.avatar} onChange={(event) => handleFormChange("avatar", event.target.value)} fullWidth sx={inputSx} />
+                            <FormControl fullWidth>
+                                <InputLabel>Phòng ban</InputLabel>
+                                <Select
+                                    value={form.teamId}
+                                    label="Phòng ban"
+                                    onChange={(event: SelectChangeEvent) => handleFormChange("teamId", event.target.value)}
+                                    disabled={isTeamsLoading}
+                                >
+                                    <MenuItem value="">Chưa gán</MenuItem>
+                                    {teamOptions.map((team) => (
+                                        <MenuItem key={team.id} value={String(team.id)}>
+                                            {team.name} ({team.code})
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                             {userDialogMode === "edit" && (
                                 <>
                                     <FormControl fullWidth>
@@ -664,7 +747,7 @@ const UserPage = () => {
                     </DialogContent>
                     <DialogActions sx={{ px: 3, pb: 3 }}>
                         <Button onClick={closeUserDialog} disabled={isSubmitting}>Hủy</Button>
-                        <Button type="submit" variant="contained" disabled={isSubmitting} startIcon={isSubmitting ? <Loader2 size={16} /> : undefined}>
+                        <Button type="submit" variant="contained" disabled={isSubmitting || isTeamsLoading} startIcon={isSubmitting ? <Loader2 size={16} /> : undefined}>
                             Lưu
                         </Button>
                     </DialogActions>

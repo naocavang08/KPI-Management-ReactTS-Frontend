@@ -11,6 +11,8 @@ import type {
     TaskListResponse,
     TaskMessageResponse,
     TaskSummary,
+    TeamTaskListQuery,
+    TrashTaskListQuery,
     UpdateTaskProgressRequest,
     UpdateTaskRequest,
 } from "../interfaces/task.types";
@@ -20,7 +22,15 @@ export const getTasks = (params: TaskListQuery) => {
 };
 
 export const getTaskById = (id: number) => {
-    return apiClient.get<Task>(`/tasks/${id}`).then((res) => res.data);
+    return apiClient
+        .get<Task>(`/tasks/${id}`, {
+            params: { _t: Date.now() },
+            headers: {
+                "Cache-Control": "no-cache",
+                Pragma: "no-cache",
+            },
+        })
+        .then((res) => res.data);
 };
 
 export const createTask = (body: CreateTaskRequest) => {
@@ -37,6 +47,26 @@ export const deleteTask = (id: number) => {
 
 export const getTaskSummary = () => {
     return apiClient.get<TaskSummary>("/tasks/summary").then((res) => res.data);
+};
+
+export const getTeamTasks = (teamId: number, params?: TeamTaskListQuery) => {
+    return apiClient.get<TaskListResponse>(`/tasks/team/${teamId}`, { params }).then((res) => res.data);
+};
+
+export const bulkDeleteTeamTasks = (teamId: number) => {
+    return apiClient.delete<TaskMessageResponse>(`/tasks/team/${teamId}`).then((res) => res.data);
+};
+
+export const restoreTask = (id: number) => {
+    return apiClient.patch<TaskMessageResponse>(`/tasks/${id}/restore`).then((res) => res.data);
+};
+
+export const permanentDeleteTask = (id: number) => {
+    return apiClient.delete<TaskMessageResponse>(`/tasks/${id}/permanent`).then((res) => res.data);
+};
+
+export const getTrashTasks = (params?: TrashTaskListQuery) => {
+    return apiClient.get<TaskListResponse>("/tasks/trash", { params }).then((res) => res.data);
 };
 
 export const completeTask = (id: number) => {

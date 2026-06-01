@@ -58,10 +58,22 @@ import {
     updateTaskProgress,
 } from "../../api/task.api";
 import { getUsers } from "../../api/user.api";
+import { getTeamMembers, getTeams } from "../../api/team.api";
 import { useToastify } from "../../hooks/useToastify";
-import { hasTaskAuthority } from "../../lib/permissions";
+import {
+    canApproveTask,
+    canDeleteTask,
+    canRejectTask,
+    canSubmitTask,
+    canUpdateTask,
+    canUpdateTaskProgress,
+    hasAuthority,
+    hasRole,
+    hasTaskAuthority,
+} from "../../lib/permissions";
 import { useAuthStore } from "../../stores/auth.store";
 import type { ManagedUser } from "../../interfaces/user.types";
+import type { Team } from "../../interfaces/team.types";
 import type {
     CreateTaskRequest,
     Task,
@@ -89,7 +101,6 @@ type TaskForm = {
 };
 
 type ProgressForm = {
-    status: TaskStatus;
     progress: string;
 };
 
@@ -110,11 +121,11 @@ const emptyPagination: TaskPagination = {
 };
 
 const emptySummary: TaskSummary = {
-    ASSIGNED: 0,
-    IN_PROGRESS: 0,
-    PENDING_REVIEW: 0,
-    COMPLETED: 0,
-    OVERDUE: 0,
+    assigned: 0,
+    inProgress: 0,
+    pendingReview: 0,
+    completed: 0,
+    overdue: 0,
 };
 
 const inputSx = {
@@ -176,6 +187,18 @@ const getStatusColor = (status: TaskStatus) => {
     return statusColor[status];
 };
 
+const getSummaryValue = (summary: TaskSummary, status: TaskStatus) => {
+    const keys: Record<TaskStatus, keyof TaskSummary> = {
+        ASSIGNED: "assigned",
+        IN_PROGRESS: "inProgress",
+        PENDING_REVIEW: "pendingReview",
+        COMPLETED: "completed",
+        OVERDUE: "overdue",
+    };
+
+    return summary[keys[status]] ?? 0;
+};
+
 const getPriorityColor = (priority: TaskPriority) => {
     if (priority === "HIGH") return { bg: semantic.danger.container, fg: semantic.danger.onContainer };
     if (priority === "MEDIUM") return { bg: semantic.warning.container, fg: semantic.warning.onContainer };
@@ -221,6 +244,11 @@ const parseTags = (value: string) => {
         .filter(Boolean);
 };
 
+const getPositiveNumber = (value: string) => {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+};
+
 const TaskPage = () => {
     const navigate = useNavigate();
     const { success, error } = useToastify();
@@ -242,13 +270,15 @@ const TaskPage = () => {
     const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [assignees, setAssignees] = useState<ManagedUser[]>([]);
+    const [teamOptions, setTeamOptions] = useState<Team[]>([]);
+    const [isTeamsLoading, setIsTeamsLoading] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [actionTask, setActionTask] = useState<Task | null>(null);
     const [taskDialogMode, setTaskDialogMode] = useState<"create" | "edit" | null>(null);
     const [form, setForm] = useState<TaskForm>(emptyForm);
     const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
     const [progressTarget, setProgressTarget] = useState<Task | null>(null);
-    const [progressForm, setProgressForm] = useState<ProgressForm>({ status: "IN_PROGRESS", progress: "0" });
+    const [progressForm, setProgressForm] = useState<ProgressForm>({ progress: "0" });
     const [submitTarget, setSubmitTarget] = useState<Task | null>(null);
     const [evidence, setEvidence] = useState("");
     const [rejectTarget, setRejectTarget] = useState<Task | null>(null);
@@ -256,12 +286,18 @@ const TaskPage = () => {
     const taskPermissions = useMemo(
         () => ({
             create: hasTaskAuthority(currentUser, permissions, "CREATE"),
-            update: hasTaskAuthority(currentUser, permissions, "UPDATE"),
-            delete: hasTaskAuthority(currentUser, permissions, "DELETE"),
-            approve: hasTaskAuthority(currentUser, permissions, "APPROVE"),
-            reject: hasTaskAuthority(currentUser, permissions, "REJECT"),
-            updateProgress: hasTaskAuthority(currentUser, permissions, "UPDATE_PROGRESS"),
-            submit: hasTaskAuthority(currentUser, permissions, "SUBMIT"),
+        }),
+        [currentUser, permissions]
+    );
+
+    const getTaskPermissions = useCallback(
+        (target: Task | null) => ({
+            update: canUpdateTask(currentUser, permissions, target),
+            delete: canDeleteTask(currentUser, permissions, target),
+            approve: canApproveTask(currentUser, permissions, target),
+            reject: canRejectTask(currentUser, permissions, target),
+            updateProgress: canUpdateTaskProgress(currentUser, permissions, target),
+            submit: canSubmitTask(currentUser, permissions, target),
         }),
         [currentUser, permissions]
     );
@@ -276,6 +312,10 @@ const TaskPage = () => {
     }, [searchTerm]);
 
     const loadSummary = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasTaskAuthority(currentUser, permissions, "VIEW_SUMMARY")) {
+            setSummary(emptySummary);
+            return;
+        }
         try {
             setIsSummaryLoading(true);
             const response = await getTaskSummary();
@@ -285,9 +325,14 @@ const TaskPage = () => {
         } finally {
             setIsSummaryLoading(false);
         }
-    }, [error]);
+    }, [currentUser, permissions, error]);
 
     const loadTasks = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasTaskAuthority(currentUser, permissions, "VIEW")) {
+            setTasks([]);
+            setPagination(emptyPagination);
+            return;
+        }
         try {
             setIsLoading(true);
             const response = await getTasks({
@@ -297,7 +342,7 @@ const TaskPage = () => {
                 status: statusFilter === "ALL" ? undefined : statusFilter,
                 priority: priorityFilter === "ALL" ? undefined : priorityFilter,
                 assigneeId: assigneeIdFilter ? Number(assigneeIdFilter) : undefined,
-                teamId: teamIdFilter.trim() || undefined,
+                teamId: getPositiveNumber(teamIdFilter.trim()),
             });
 
             setTasks(response.data);
@@ -307,19 +352,55 @@ const TaskPage = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [assigneeIdFilter, debouncedSearch, error, limit, page, priorityFilter, statusFilter, teamIdFilter]);
+    }, [currentUser, permissions, assigneeIdFilter, debouncedSearch, error, limit, page, priorityFilter, statusFilter, teamIdFilter]);
 
     const loadAssignees = useCallback(async () => {
-        try {
-            setIsUsersLoading(true);
-            const response = await getUsers({ page: 1, limit: 100, status: "ACTIVE" });
-            setAssignees(response.data);
-        } catch (err) {
-            error("Không tải được danh sách người dùng", getErrorMessage(err, "Vui lòng thử lại sau"));
-        } finally {
-            setIsUsersLoading(false);
+        if (hasRole(currentUser, "ADMIN") || hasAuthority(currentUser, permissions, "USER:VIEW")) {
+            try {
+                setIsUsersLoading(true);
+                const response = await getUsers({ page: 1, limit: 100, status: "ACTIVE" });
+                setAssignees(response.data);
+            } catch (err) {
+                error("Không tải được danh sách người dùng", getErrorMessage(err, "Vui lòng thử lại sau"));
+            } finally {
+                setIsUsersLoading(false);
+            }
+        } else if (currentUser?.teamId !== null && currentUser?.teamId !== undefined && hasAuthority(currentUser, permissions, "TEAM:VIEW")) {
+            try {
+                setIsUsersLoading(true);
+                const response = await getTeamMembers(currentUser.teamId, { page: 1, limit: 100 });
+                setAssignees(response.data);
+            } catch (err) {
+                error("Không tải được danh sách thành viên team", getErrorMessage(err, "Vui lòng thử lại sau"));
+            } finally {
+                setIsUsersLoading(false);
+            }
+        } else {
+            setAssignees([]);
         }
-    }, [error]);
+    }, [currentUser, permissions, error]);
+
+    const loadTeamOptions = useCallback(async () => {
+        if (!hasRole(currentUser, "ADMIN") && !hasAuthority(currentUser, permissions, "TEAM:VIEW")) {
+            setTeamOptions([]);
+            return;
+        }
+
+        try {
+            setIsTeamsLoading(true);
+            const response = await getTeams({ page: 1, limit: 100 });
+            setTeamOptions(response.data);
+        } catch (err) {
+            error("KhÃ´ng táº£i Ä‘Æ°á»£c danh sÃ¡ch team", getErrorMessage(err, "Vui lÃ²ng thá»­ láº¡i sau"));
+        } finally {
+            setIsTeamsLoading(false);
+        }
+    }, [currentUser, permissions, error]);
+
+    const hasCurrentUserTeamOption = useMemo(
+        () => currentUser?.teamId !== null && currentUser?.teamId !== undefined && !teamOptions.some((team) => team.id === currentUser.teamId),
+        [currentUser?.teamId, teamOptions]
+    );
 
     useEffect(() => {
         void loadTasks();
@@ -333,7 +414,11 @@ const TaskPage = () => {
         void loadAssignees();
     }, [loadAssignees]);
 
-    const totalTasks = useMemo(() => taskStatuses.reduce((total, status) => total + (summary[status] ?? 0), 0), [summary]);
+    useEffect(() => {
+        void loadTeamOptions();
+    }, [loadTeamOptions]);
+
+    const totalTasks = useMemo(() => taskStatuses.reduce((total, status) => total + getSummaryValue(summary, status), 0), [summary]);
 
     const closeActionMenu = () => {
         setAnchorEl(null);
@@ -356,6 +441,11 @@ const TaskPage = () => {
 
     const openEditDialog = async (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).update) {
+            error("Không có quyền chỉnh sửa task", "Chỉ người tạo task hoặc ADMIN được sửa");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             const detail = await getTaskById(task.id);
@@ -385,6 +475,8 @@ const TaskPage = () => {
         const description = form.description.trim();
         const assigneeId = Number(form.assigneeId);
         const deadline = fromDateTimeLocal(form.deadline);
+        const selectedAssignee = assignees.find((user) => user.id === assigneeId);
+        const teamId = selectedAssignee?.teamId ?? currentUser?.teamId ?? undefined;
 
         if (!title || !description || !assigneeId || !deadline) {
             error("Thiếu thông tin", "Vui lòng nhập tiêu đề, mô tả, người nhận và deadline");
@@ -394,12 +486,18 @@ const TaskPage = () => {
         try {
             setIsSubmitting(true);
             if (taskDialogMode === "create") {
+                if (teamId === undefined) {
+                    error("Thiếu team", "Người nhận task phải thuộc một team hợp lệ");
+                    return;
+                }
+
                 const payload: CreateTaskRequest = {
                     title,
                     description,
                     assigneeId,
                     deadline,
                     priority: form.priority,
+                    teamId,
                 };
                 await createTask(payload);
                 success("Đã tạo task", "Danh sách task đã được cập nhật");
@@ -427,22 +525,27 @@ const TaskPage = () => {
 
     const openProgressDialog = (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).updateProgress) {
+            error("Không có quyền cập nhật tiến độ", "Chỉ người được giao task được cập nhật tiến độ");
+            return;
+        }
+
         setProgressTarget(task);
-        setProgressForm({ status: task.status, progress: String(task.progress ?? 0) });
+        setProgressForm({ progress: String(Math.min(task.progress ?? 0, 99)) });
     };
 
     const confirmUpdateProgress = async () => {
         if (!progressTarget) return;
         const progress = Number(progressForm.progress);
 
-        if (Number.isNaN(progress) || progress < 0 || progress > 100) {
-            error("Tiến độ không hợp lệ", "Vui lòng nhập giá trị từ 0 đến 100");
+        if (!Number.isInteger(progress) || progress < 0 || progress > 99) {
+            error("Tiến độ không hợp lệ", "Vui lòng nhập giá trị từ 0 đến 99. Dùng Nộp báo cáo để hoàn thành task.");
             return;
         }
 
         try {
             setIsSubmitting(true);
-            await updateTaskProgress(progressTarget.id, { status: progressForm.status, progress });
+            await updateTaskProgress(progressTarget.id, { status: "IN_PROGRESS", progress });
             success("Đã cập nhật tiến độ", progressTarget.title);
             setProgressTarget(null);
             await refreshData();
@@ -455,6 +558,11 @@ const TaskPage = () => {
 
     const openSubmitDialog = (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).submit) {
+            error("Không có quyền nộp báo cáo", "Chỉ người được giao task được nộp báo cáo");
+            return;
+        }
+
         setSubmitTarget(task);
         setEvidence(task.evidence ?? "");
     };
@@ -477,6 +585,11 @@ const TaskPage = () => {
 
     const confirmCompleteTask = async (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).approve) {
+            error("Không có quyền duyệt task", "Task phải chờ duyệt và bạn phải là người tạo task hoặc ADMIN");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             await completeTask(task.id);
@@ -491,6 +604,11 @@ const TaskPage = () => {
 
     const openRejectDialog = (task: Task) => {
         closeActionMenu();
+        if (!getTaskPermissions(task).reject) {
+            error("Không có quyền từ chối task", "Task phải chờ duyệt và bạn phải là người tạo task hoặc ADMIN");
+            return;
+        }
+
         setRejectTarget(task);
         setRejectNote("");
     };
@@ -519,6 +637,10 @@ const TaskPage = () => {
 
     const confirmDeleteTask = async () => {
         if (!deleteTarget) return;
+        if (!getTaskPermissions(deleteTarget).delete) {
+            error("Không có quyền xóa task", "Chỉ người tạo task hoặc ADMIN được xóa");
+            return;
+        }
 
         try {
             setIsSubmitting(true);
@@ -532,6 +654,8 @@ const TaskPage = () => {
             setIsSubmitting(false);
         }
     };
+
+    const actionPermissions = getTaskPermissions(actionTask);
 
     return (
         <Stack spacing={spacing.lg}>
@@ -571,7 +695,7 @@ const TaskPage = () => {
                         <Paper key={status} elevation={0} sx={{ p: 2, borderRadius: radius.card, border: elevation.level1.border, bgcolor: colors.surfaceContainerLowest }}>
                             <Typography sx={{ ...typography.labelCaps, color: colors.outline }}>{getStatusLabel(status)}</Typography>
                             <Stack direction="row" sx={{ mt: 1, alignItems: "center", justifyContent: "space-between" }}>
-                                <Typography sx={{ ...typography.h1, color: colors.onSurface }}>{summary[status] ?? 0}</Typography>
+                                <Typography sx={{ ...typography.h1, color: colors.onSurface }}>{getSummaryValue(summary, status)}</Typography>
                                 <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: tone.fg }} />
                             </Stack>
                             {isSummaryLoading && <LinearProgress sx={{ mt: 1 }} />}
@@ -650,16 +774,31 @@ const TaskPage = () => {
                                 ))}
                             </Select>
                         </FormControl>
-                        <TextField
-                            label="Mã team/phòng ban"
-                            size="small"
-                            value={teamIdFilter}
-                            onChange={(event) => {
-                                setTeamIdFilter(event.target.value);
-                                setPage(1);
-                            }}
-                            sx={{ ...inputSx, minWidth: { xs: "100%", lg: 120 } }}
-                        />
+                        <FormControl size="small" sx={{ minWidth: { xs: "100%", lg: 220 } }}>
+                            <InputLabel>Team/phòng ban</InputLabel>
+                            <Select
+                                value={teamIdFilter}
+                                label="Team/phòng ban"
+                                disabled={isTeamsLoading}
+                                onChange={(event: SelectChangeEvent) => {
+                                    setTeamIdFilter(event.target.value);
+                                    setPage(1);
+                                }}
+                                sx={{ borderRadius: radius.button, bgcolor: components.input.background }}
+                            >
+                                <MenuItem value="">Tất cả</MenuItem>
+                                {teamOptions.map((team) => (
+                                    <MenuItem key={team.id} value={String(team.id)}>
+                                        {team.name} ({team.code})
+                                    </MenuItem>
+                                ))}
+                                {hasCurrentUserTeamOption && (
+                                    <MenuItem value={String(currentUser?.teamId)}>
+                                        Team #{currentUser?.teamId}
+                                    </MenuItem>
+                                )}
+                            </Select>
+                        </FormControl>
                         <FormControl size="small" sx={{ minWidth: { xs: "100%", lg: 110 } }}>
                             <InputLabel>Hiển thị</InputLabel>
                             <Select
@@ -699,6 +838,7 @@ const TaskPage = () => {
                                 tasks.map((task) => {
                                     const statusTone = getStatusColor(task.status);
                                     const priorityTone = getPriorityColor(task.priority);
+                                    const rowPermissions = getTaskPermissions(task);
                                     return (
                                         <TableRow key={task.id} hover>
                                             <TableCell sx={{ maxWidth: 360 }}>
@@ -731,7 +871,7 @@ const TaskPage = () => {
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title="Chỉnh sửa">
-                                                    <IconButton size="small" onClick={() => void openEditDialog(task)} disabled={isSubmitting || !taskPermissions.update}>
+                                                    <IconButton size="small" onClick={() => void openEditDialog(task)} disabled={isSubmitting || !rowPermissions.update}>
                                                         <Edit2 size={16} />
                                                     </IconButton>
                                                 </Tooltip>
@@ -773,28 +913,28 @@ const TaskPage = () => {
                     <Eye size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Chi tiết</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.update} onClick={() => actionTask && void openEditDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.update} onClick={() => actionTask && void openEditDialog(actionTask)}>
                     <Edit2 size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Chỉnh sửa</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.updateProgress} onClick={() => actionTask && openProgressDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.updateProgress} onClick={() => actionTask && openProgressDialog(actionTask)}>
                     <ClipboardCheck size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Cập nhật tiến độ</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.submit} onClick={() => actionTask && openSubmitDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.submit} onClick={() => actionTask && openSubmitDialog(actionTask)}>
                     <FileUp size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Nộp báo cáo</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.approve} onClick={() => actionTask && void confirmCompleteTask(actionTask)}>
+                <MenuItem disabled={!actionPermissions.approve} onClick={() => actionTask && void confirmCompleteTask(actionTask)}>
                     <CheckCircle2 size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Duyệt hoàn thành</Typography>
                 </MenuItem>
-                <MenuItem disabled={!taskPermissions.reject} onClick={() => actionTask && openRejectDialog(actionTask)}>
+                <MenuItem disabled={!actionPermissions.reject} onClick={() => actionTask && openRejectDialog(actionTask)}>
                     <XCircle size={16} />
                     <Typography sx={{ ml: 1.5 }} variant="body2">Từ chối</Typography>
                 </MenuItem>
                 <MenuItem
-                    disabled={!taskPermissions.delete}
+                    disabled={!actionPermissions.delete}
                     onClick={() => {
                         if (actionTask) setDeleteTarget(actionTask);
                         closeActionMenu();
@@ -852,13 +992,8 @@ const TaskPage = () => {
                 <DialogContent>
                     <Stack spacing={2} sx={{ pt: 1 }}>
                         <Typography variant="body2">{progressTarget?.title}</Typography>
-                        <FormControl fullWidth>
-                            <InputLabel>Trạng thái</InputLabel>
-                            <Select value={progressForm.status} label="Trạng thái" onChange={(event: SelectChangeEvent) => setProgressForm((prev) => ({ ...prev, status: event.target.value as TaskStatus }))}>
-                                {taskStatuses.map((status) => <MenuItem key={status} value={status}>{getStatusLabel(status)}</MenuItem>)}
-                            </Select>
-                        </FormControl>
-                        <TextField label="Tiến độ (%)" type="number" value={progressForm.progress} onChange={(event) => setProgressForm((prev) => ({ ...prev, progress: event.target.value }))} fullWidth sx={inputSx} />
+                        <TextField label="Trạng thái" value={getStatusLabel("IN_PROGRESS")} fullWidth sx={inputSx} disabled />
+                        <TextField label="Tiến độ (%)" type="number" value={progressForm.progress} onChange={(event) => setProgressForm({ progress: event.target.value })} fullWidth sx={inputSx} slotProps={{ htmlInput: { min: 0, max: 99, step: 1 } }} />
                     </Stack>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 3 }}>

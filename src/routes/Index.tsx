@@ -3,7 +3,6 @@ import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
 import ProjectLayout from '../layout/ProjectLayout';
 import LoginPage from '../pages/Auth/LoginPage';
-import DashboardPage from '../pages/DashboardPage';
 import SettingPage from '../pages/SettingPage';
 import RolePage from '../pages/Admin/RolePage';
 import GetRolePage from '../pages/Admin/GetRolePage';
@@ -12,6 +11,10 @@ import TaskPage from '../pages/Task/TaskPage';
 import TaskDetailPage from '../pages/Task/TaskDetailPage';
 import KpiScorePage from '../pages/Kpi/KpiScorePage';
 import KpiReviewPage from '../pages/Kpi/KpiReviewPage';
+import KpiAppealPage from '../pages/Kpi/KpiAppealPage';
+import KpiWeightsPage from '../pages/Kpi/KpiWeightsPage';
+import KpiExportPage from '../pages/Kpi/KpiExportPage';
+import TeamPage from '../pages/Team/TeamPage';
 
 const AppRoutes = () => {
     return (
@@ -34,15 +37,18 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             >
-                <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/settings" element={<SettingPage />} />
                 <Route path="/admin/role" element={<RolePage />} />
                 <Route path="/admin/role/:id" element={<GetRolePage />} />
                 <Route path="/admin/user" element={<UserPage />} />
                 <Route path="/tasks" element={<TaskPage />} />
                 <Route path="/tasks/:id" element={<TaskDetailPage />} />
+                <Route path="/teams" element={<TeamPage />} />
                 <Route path="/kpi/scores" element={<KpiScorePage />} />
                 <Route path="/kpi/reviews" element={<KpiReviewPage />} />
+                <Route path="/kpi/appeals" element={<KpiAppealPage />} />
+                <Route path="/kpi/weights" element={<KpiWeightsPage />} />
+                <Route path="/kpi/export" element={<KpiExportPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/login" replace />} />

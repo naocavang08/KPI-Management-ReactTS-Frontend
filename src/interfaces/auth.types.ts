@@ -48,6 +48,9 @@ export interface AuthUser {
     type: UserType;
     status: UserStatus;
     lockReason?: string | null;
+    department?: string | null;
+    managerId?: number | null;
+    teamId?: number | null;
     lastLoginAt?: string | null;
     createdAt?: string | null;
     updatedAt?: string | null;
